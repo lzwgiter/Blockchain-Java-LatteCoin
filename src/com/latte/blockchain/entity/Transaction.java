@@ -1,6 +1,9 @@
-package com.latte.blockchain;
+package com.latte.blockchain.entity;
 
-import com.latte.blockchain.utils.StringUtil;
+import com.latte.blockchain.NoobChain;
+import com.latte.blockchain.TransactionInput;
+import com.latte.blockchain.TransactionOutput;
+import com.latte.blockchain.utils.CryptoUtil;
 
 import java.security.PrivateKey;
 import java.security.PublicKey;
@@ -14,27 +17,51 @@ import java.util.ArrayList;
  */
 public class Transaction {
 
-    public String transactionId; //Contains a hash of transaction*
-    public PublicKey sender; //Senders address/public key.
-    public PublicKey reciepient; //Recipients address/public key.
-    public float value; //Contains the amount we wish to send to the recipient.
-    public byte[] signature; //This is to prevent anybody else from spending funds in our wallet.
+    /**
+     * 交易的id
+     */
+    private String transactionId;
 
-    public ArrayList<TransactionInput> inputs;
-    public ArrayList<TransactionOutput> outputs = new ArrayList<>();
+    /**
+     * 发送方的地址(公钥)
+     */
+    private PublicKey sender;
 
-    private static int sequence = 0; //A rough count of how many transactions have been generated
+    /**
+     * 接受方的地址(公钥)
+     */
+    private PublicKey reciepient;
 
-    // Constructor:
-    public Transaction(PublicKey from, PublicKey to, float value, ArrayList<TransactionInput> inputs) {
-        this.sender = from;
-        this.reciepient = to;
+    /**
+     * 发送的金额
+     */
+    private Float value;
+
+    /**
+     * 交易签名信息
+     */
+    private byte[] signature;
+
+    /**
+     * 交易输入
+     */
+    private ArrayList<TransactionInput> inputs;
+
+    private ArrayList<TransactionOutput> outputs = new ArrayList<>();
+
+    /**
+     * 记录交易数量
+     */
+    private static int sequence = 0;
+
+    public Transaction(PublicKey sender, PublicKey recipient, Float value, ArrayList<TransactionInput> inputs) {
+        this.sender = sender;
+        this.reciepient = recipient;
         this.value = value;
         this.inputs = inputs;
     }
 
-    public boolean processTransaction() {
-
+    public boolean verifyTransaction() {
         if (!isValidSignature()) {
             System.out.println("#Transaction Signature failed to verify");
             return false;
@@ -53,7 +80,7 @@ public class Transaction {
 
         //Generate transaction outputs:
         float leftOver = getInputsValue() - value; //get value of inputs then the left over change:
-        transactionId = calulateHash();
+        transactionId = calHash();
         outputs.add(new TransactionOutput(this.reciepient, value, transactionId)); //send value to recipient
         outputs.add(new TransactionOutput(this.sender, leftOver, transactionId)); //send the left over 'change' back to sender
 
@@ -85,13 +112,13 @@ public class Transaction {
     }
 
     public void generateSignature(PrivateKey privateKey) {
-        String data = StringUtil.getStringFromKey(sender) + StringUtil.getStringFromKey(reciepient) + value;
-        signature = StringUtil.applySignature(privateKey, data);
+        String data = CryptoUtil.getStringFromKey(sender) + CryptoUtil.getStringFromKey(reciepient) + value;
+        signature = CryptoUtil.applySignature(privateKey, data);
     }
 
     public boolean isValidSignature() {
-        String data = StringUtil.getStringFromKey(sender) + StringUtil.getStringFromKey(reciepient) + value;
-        return !StringUtil.verifySignature(sender, data, signature);
+        String data = CryptoUtil.getStringFromKey(sender) + CryptoUtil.getStringFromKey(reciepient) + value;
+        return CryptoUtil.verifySignature(sender, data, signature);
     }
 
     public float getOutputsValue() {
@@ -102,12 +129,14 @@ public class Transaction {
         return total;
     }
 
-    private String calulateHash() {
-        sequence++; //increase the sequence to avoid 2 identical transactions having the same hash
-        return StringUtil.applySha256(
-                StringUtil.getStringFromKey(sender) +
-                        StringUtil.getStringFromKey(reciepient) +
-                        value + sequence
+    private String calHash() {
+        //increase the sequence to avoid 2 identical transactions having the same hash
+        sequence++;
+        return CryptoUtil.applySha256(
+                CryptoUtil.getStringFromKey(sender) +
+                        CryptoUtil.getStringFromKey(reciepient) +
+                        value +
+                        sequence
         );
     }
 }

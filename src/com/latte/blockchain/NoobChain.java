@@ -1,5 +1,8 @@
 package com.latte.blockchain;
 
+import com.latte.blockchain.entity.Block;
+import com.latte.blockchain.entity.Transaction;
+
 import java.security.Security;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -12,12 +15,17 @@ import java.util.HashMap;
  */
 public class NoobChain {
     public static ArrayList<Block> blockchain = new ArrayList<>();
+
     public static HashMap<String,TransactionOutput> UTXOs = new HashMap<>();
 
     public static int difficulty = 3;
+
     public static float minimumTransaction = 0.1f;
+
     public static Wallet walletA;
+
     public static Wallet walletB;
+
     public static Transaction genesisTransaction;
 
     public static void main(String[] args) {
@@ -28,19 +36,27 @@ public class NoobChain {
         walletB = new Wallet();
         Wallet coinbase = new Wallet();
 
-        //create genesis transaction, which sends 100 NoobCoin to walletA:
+        // 创建一次初始交易 A向B支付100币
         genesisTransaction = new Transaction(coinbase.publicKey, walletA.publicKey, 100f, null);
-        genesisTransaction.generateSignature(coinbase.privateKey);	 //manually sign the genesis transaction
-        genesisTransaction.transactionId = "0"; //manually set the transaction id
-        genesisTransaction.outputs.add(new TransactionOutput(genesisTransaction.reciepient, genesisTransaction.value, genesisTransaction.transactionId)); //manually add the Transactions Output
-        UTXOs.put(genesisTransaction.outputs.get(0).id, genesisTransaction.outputs.get(0)); //its important to store our first transaction in the UTXOs list.
+        // 对交易进行手动签名
+        genesisTransaction.generateSignature(coinbase.privateKey);3
+        // 设置交易id
+        genesisTransaction.transactionId = "0";
+        // 添加交易输出
+        genesisTransaction.outputs.add(
+                new TransactionOutput(
+                        genesisTransaction.reciepient,
+                        genesisTransaction.value,
+                        genesisTransaction.transactionId));
+        //将交易储存进UTXO列表.
+        UTXOs.put(genesisTransaction.outputs.get(0).id, genesisTransaction.outputs.get(0));
 
         System.out.println("Creating and Mining Genesis block... ");
         Block genesis = new Block("0");
         genesis.addTransaction(genesisTransaction);
         addBlock(genesis);
 
-        //testing
+        // 测试
         Block block1 = new Block(genesis.hash);
         System.out.println("\nWalletA's balance is: " + walletA.getBalance());
         System.out.println("\nWalletA is Attempting to send funds (40) to WalletB...");
@@ -70,7 +86,8 @@ public class NoobChain {
         Block currentBlock;
         Block previousBlock;
         String hashTarget = new String(new char[difficulty]).replace('\0', '0');
-        HashMap<String,TransactionOutput> tempUTXOs = new HashMap<>(); //a temporary working list of unspent transactions at a given block state.
+        //a temporary working list of unspent transactions at a given block state.
+        HashMap<String,TransactionOutput> tempUTXOs = new HashMap<>();
         tempUTXOs.put(genesisTransaction.outputs.get(0).id, genesisTransaction.outputs.get(0));
 
         //loop through blockchain to check hashes:

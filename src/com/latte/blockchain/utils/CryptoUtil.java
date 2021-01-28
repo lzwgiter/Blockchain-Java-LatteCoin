@@ -1,6 +1,6 @@
 package com.latte.blockchain.utils;
 
-import com.latte.blockchain.Transaction;
+import com.latte.blockchain.entity.Transaction;
 
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
@@ -18,8 +18,14 @@ import java.util.List;
  * @author float
  * @since 2021/1/27
  */
-public class StringUtil {
+public class CryptoUtil {
 
+    /**
+     * sha256哈希函数
+     *
+     * @param msg 待哈希消息
+     * @return String 哈希值
+     */
     public static String applySha256(String msg) {
         try {
             MessageDigest digest = MessageDigest.getInstance("SHA-256");
@@ -39,11 +45,11 @@ public class StringUtil {
     }
 
     /**
-     * 椭圆曲线签名算法
+     * ECDSA签名函数
      *
      * @param privateKey 私钥
      * @param msg        消息
-     * @return byte[] signature
+     * @return byte[] {@link Signature}
      */
     public static byte[] applySignature(PrivateKey privateKey, String msg) {
         Signature dsa;
@@ -59,7 +65,7 @@ public class StringUtil {
     }
 
     /**
-     * 验证签名
+     * ECDSA签名验证函数
      *
      * @param publicKey 公钥
      * @param msg       消息
@@ -97,10 +103,22 @@ public class StringUtil {
         return new String(new char[difficulty]).replace('\0', '0');
     }
 
+    /**
+     * Base64加密
+     *
+     * @param key {@link Key}
+     * @return String
+     */
     public static String getStringFromKey(Key key) {
         return Base64.getEncoder().encodeToString(key.getEncoded());
     }
 
+    /**
+     * 计算Merkle根值
+     *
+     * @param transactions 交易@{@link Transaction}
+     * @return String
+     */
     public static String getMerkleRoot(ArrayList<Transaction> transactions) {
         int count = transactions.size();
 
@@ -120,9 +138,5 @@ public class StringUtil {
         }
 
         return (treeLayer.size() == 1) ? treeLayer.get(0) : "";
-    }
-
-    public static void main(String[] args) {
-        System.out.println(applySha256("123"));
     }
 }

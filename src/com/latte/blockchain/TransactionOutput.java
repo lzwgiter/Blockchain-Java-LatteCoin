@@ -1,6 +1,6 @@
 package com.latte.blockchain;
 
-import com.latte.blockchain.utils.StringUtil;
+import com.latte.blockchain.utils.CryptoUtil;
 
 import java.security.PublicKey;
 
@@ -21,7 +21,7 @@ public class TransactionOutput {
         this.reciepient = reciepient;
         this.value = value;
         this.parentTransactionId = parentTransactionId;
-        this.id = StringUtil.applySha256(StringUtil.getStringFromKey(reciepient)+ value +parentTransactionId);
+        this.id = CryptoUtil.applySha256(CryptoUtil.getStringFromKey(reciepient)+ value +parentTransactionId);
     }
 
     //Check if coin belongs to you
