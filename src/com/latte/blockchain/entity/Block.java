@@ -1,7 +1,5 @@
 package com.latte.blockchain.entity;
 
-import com.latte.blockchain.utils.CryptoUtil;
-
 import java.util.ArrayList;
 
 /**
@@ -45,63 +43,9 @@ public class Block {
      */
     private int nonce;
 
-    private static final String ZEROHASH = "0";
-
     public Block(String previousHash) {
         this.previousHash = previousHash;
         this.timeStamp = System.currentTimeMillis();
-    }
-
-    /**
-     * 计算新的区块哈希值
-     *
-     * @return String 新区块哈希值
-     */
-    public String calHash() {
-        return CryptoUtil.applySha256(
-                this.previousHash +
-                        this.timeStamp +
-                        this.nonce +
-                        this.merkleRoot
-        );
-    }
-
-    /**
-     * 模拟挖矿过程
-     *
-     * @param difficulty 困难值
-     */
-    public void mineBlock(int difficulty) {
-        merkleRoot = CryptoUtil.getMerkleRoot(transactions);
-        String targetHash = CryptoUtil.getDifficultyString(difficulty);
-        while (!hash.substring(0, difficulty).equals(targetHash)) {
-            // 持续变换Nonce值，直到找到满足需求的散列值
-            nonce++;
-            hash = calHash();
-        }
-        System.out.println("[Mined √] : " + hash);
-    }
-
-    /**
-     * 添加交易信息到区块
-     *
-     * @param transaction 交易信息
-     * @return 是否添加成功
-     */
-    public boolean addTransaction(Transaction transaction) {
-        if (transaction == null) {
-            return false;
-        }
-        if (!previousHash.equals(ZEROHASH)) {
-            // 非初始块
-            if (!transaction.verifyTransaction()) {
-                System.out.println("Transaction failed to process. Discarded.");
-                return false;
-            }
-        }
-        transactions.add(transaction);
-        System.out.println("Transaction Successfully added to Block");
-        return true;
     }
 
     public Integer getId() {

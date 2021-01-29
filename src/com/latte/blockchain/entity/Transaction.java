@@ -47,96 +47,106 @@ public class Transaction {
      */
     private ArrayList<TransactionInput> inputs;
 
+    /**
+     * 交易输出
+     */
     private ArrayList<TransactionOutput> outputs = new ArrayList<>();
 
     /**
      * 记录交易数量
      */
-    private static int sequence = 0;
+    private Integer sequence = 0;
 
+    /**
+     * 数据
+     */
+    private String data;
+
+    /**
+     * 交易
+     *
+     * @param sender    {@link PublicKey} 发送方地址
+     * @param recipient {@link PublicKey} 接受方地址
+     * @param value     交易金额
+     * @param inputs    交易输入
+     */
     public Transaction(PublicKey sender, PublicKey recipient, Float value, ArrayList<TransactionInput> inputs) {
         this.sender = sender;
         this.reciepient = recipient;
         this.value = value;
         this.inputs = inputs;
+        this.data = CryptoUtil.getStringFromKey(sender) + CryptoUtil.getStringFromKey(recipient) + value;
     }
 
-    public boolean verifyTransaction() {
-        if (!isValidSignature()) {
-            System.out.println("#Transaction Signature failed to verify");
-            return false;
-        }
-
-        //Gathers transaction inputs (Making sure they are unspent):
-        for (TransactionInput i : inputs) {
-            i.UTXO = NoobChain.UTXOs.get(i.transactionOutputId);
-        }
-
-        //Checks if transaction is valid:
-        if (getInputsValue() < NoobChain.minimumTransaction) {
-            System.out.println("Transaction Inputs to small: " + getInputsValue());
-            return false;
-        }
-
-        //Generate transaction outputs:
-        float leftOver = getInputsValue() - value; //get value of inputs then the left over change:
-        transactionId = calHash();
-        outputs.add(new TransactionOutput(this.reciepient, value, transactionId)); //send value to recipient
-        outputs.add(new TransactionOutput(this.sender, leftOver, transactionId)); //send the left over 'change' back to sender
-
-        //Add outputs to Unspent list
-        for (TransactionOutput o : outputs) {
-            NoobChain.UTXOs.put(o.id, o);
-        }
-
-        //Remove transaction inputs from UTXO lists as spent:
-        for (TransactionInput i : inputs) {
-            if (i.UTXO == null) {
-                continue; //if Transaction can't be found skip it
-            }
-            NoobChain.UTXOs.remove(i.UTXO.id);
-        }
-
-        return true;
+    public String getTransactionId() {
+        return transactionId;
     }
 
-    public float getInputsValue() {
-        float total = 0;
-        for (TransactionInput i : inputs) {
-            if (i.UTXO == null) {
-                continue; //if Transaction can't be found skip it, This behavior may not be optimal.
-            }
-            total += i.UTXO.value;
-        }
-        return total;
+    public void setTransactionId(String transactionId) {
+        this.transactionId = transactionId;
     }
 
-    public void generateSignature(PrivateKey privateKey) {
-        String data = CryptoUtil.getStringFromKey(sender) + CryptoUtil.getStringFromKey(reciepient) + value;
-        signature = CryptoUtil.applySignature(privateKey, data);
+    public PublicKey getSender() {
+        return sender;
     }
 
-    public boolean isValidSignature() {
-        String data = CryptoUtil.getStringFromKey(sender) + CryptoUtil.getStringFromKey(reciepient) + value;
-        return CryptoUtil.verifySignature(sender, data, signature);
+    public void setSender(PublicKey sender) {
+        this.sender = sender;
     }
 
-    public float getOutputsValue() {
-        float total = 0;
-        for (TransactionOutput o : outputs) {
-            total += o.value;
-        }
-        return total;
+    public PublicKey getReciepient() {
+        return reciepient;
     }
 
-    private String calHash() {
-        //increase the sequence to avoid 2 identical transactions having the same hash
-        sequence++;
-        return CryptoUtil.applySha256(
-                CryptoUtil.getStringFromKey(sender) +
-                        CryptoUtil.getStringFromKey(reciepient) +
-                        value +
-                        sequence
-        );
+    public void setReciepient(PublicKey reciepient) {
+        this.reciepient = reciepient;
+    }
+
+    public Float getValue() {
+        return value;
+    }
+
+    public void setValue(Float value) {
+        this.value = value;
+    }
+
+    public byte[] getSignature() {
+        return signature;
+    }
+
+    public void setSignature(byte[] signature) {
+        this.signature = signature;
+    }
+
+    public ArrayList<TransactionInput> getInputs() {
+        return inputs;
+    }
+
+    public void setInputs(ArrayList<TransactionInput> inputs) {
+        this.inputs = inputs;
+    }
+
+    public ArrayList<TransactionOutput> getOutputs() {
+        return outputs;
+    }
+
+    public void setOutputs(ArrayList<TransactionOutput> outputs) {
+        this.outputs = outputs;
+    }
+
+    public int getSequence() {
+        return sequence;
+    }
+
+    public void setSequence(Integer sequence) {
+        this.sequence = sequence;
+    }
+
+    public String getData() {
+        return data;
+    }
+
+    public void setData(String data) {
+        this.data = data;
     }
 }
