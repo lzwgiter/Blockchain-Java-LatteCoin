@@ -1,11 +1,8 @@
 package com.latte.blockchain.entity;
 
-import com.latte.blockchain.NoobChain;
-import com.latte.blockchain.TransactionInput;
-import com.latte.blockchain.TransactionOutput;
 import com.latte.blockchain.utils.CryptoUtil;
+import lombok.Data;
 
-import java.security.PrivateKey;
 import java.security.PublicKey;
 import java.util.ArrayList;
 
@@ -15,12 +12,13 @@ import java.util.ArrayList;
  * @author float
  * @since 2021/1/27
  */
+@Data
 public class Transaction {
 
     /**
      * 交易的id
      */
-    private String transactionId;
+    private String id;
 
     /**
      * 发送方的地址(公钥)
@@ -30,7 +28,7 @@ public class Transaction {
     /**
      * 接受方的地址(公钥)
      */
-    private PublicKey reciepient;
+    private PublicKey recipient;
 
     /**
      * 发送的金额
@@ -72,81 +70,9 @@ public class Transaction {
      */
     public Transaction(PublicKey sender, PublicKey recipient, Float value, ArrayList<TransactionInput> inputs) {
         this.sender = sender;
-        this.reciepient = recipient;
+        this.recipient = recipient;
         this.value = value;
         this.inputs = inputs;
         this.data = CryptoUtil.getStringFromKey(sender) + CryptoUtil.getStringFromKey(recipient) + value;
-    }
-
-    public String getTransactionId() {
-        return transactionId;
-    }
-
-    public void setTransactionId(String transactionId) {
-        this.transactionId = transactionId;
-    }
-
-    public PublicKey getSender() {
-        return sender;
-    }
-
-    public void setSender(PublicKey sender) {
-        this.sender = sender;
-    }
-
-    public PublicKey getReciepient() {
-        return reciepient;
-    }
-
-    public void setReciepient(PublicKey reciepient) {
-        this.reciepient = reciepient;
-    }
-
-    public Float getValue() {
-        return value;
-    }
-
-    public void setValue(Float value) {
-        this.value = value;
-    }
-
-    public byte[] getSignature() {
-        return signature;
-    }
-
-    public void setSignature(byte[] signature) {
-        this.signature = signature;
-    }
-
-    public ArrayList<TransactionInput> getInputs() {
-        return inputs;
-    }
-
-    public void setInputs(ArrayList<TransactionInput> inputs) {
-        this.inputs = inputs;
-    }
-
-    public ArrayList<TransactionOutput> getOutputs() {
-        return outputs;
-    }
-
-    public void setOutputs(ArrayList<TransactionOutput> outputs) {
-        this.outputs = outputs;
-    }
-
-    public int getSequence() {
-        return sequence;
-    }
-
-    public void setSequence(Integer sequence) {
-        this.sequence = sequence;
-    }
-
-    public String getData() {
-        return data;
-    }
-
-    public void setData(String data) {
-        this.data = data;
     }
 }

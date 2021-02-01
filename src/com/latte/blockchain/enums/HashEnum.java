@@ -7,5 +7,11 @@ package com.latte.blockchain.enums;
  * @since 2021/01/28
  */
 public class HashEnum {
+
+    /**
+     * 哈希0
+     */
     public static final String ZEROHASH = "0";
+
+
 }

@@ -4,7 +4,12 @@ import com.latte.blockchain.entity.Block;
 import com.latte.blockchain.entity.Transaction;
 import com.latte.blockchain.enums.HashEnum;
 import com.latte.blockchain.service.IMineService;
+import com.latte.blockchain.service.ITransactionService;
 import com.latte.blockchain.utils.CryptoUtil;
+
+import org.omg.IOP.TransactionService;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
 
@@ -14,13 +19,19 @@ import java.util.ArrayList;
  * @author float311
  * @since 2021/01/28
  */
+@Service
 public class MineServiceImpl implements IMineService {
 
-    private final Block newBlock;
+    private Block newBlock = null;
 
+    @Autowired
+    private ITransactionService transactionService;
+
+    // TODO: preHash导致不能自动注入
+    /**
     public MineServiceImpl(String preHash) {
         this.newBlock = new Block(preHash);
-    }
+    }*/
 
     /**
      * 挖新的区块
@@ -55,7 +66,7 @@ public class MineServiceImpl implements IMineService {
         }
         if (!this.newBlock.getPreviousHash().equals(HashEnum.ZEROHASH)) {
             // 非初始块
-            if (!transaction.verifyTransaction()) {
+            if (!transactionService.verifyTransaction(transaction)) {
                 System.out.println("Transaction failed to process. Discarded.");
                 return false;
             }

@@ -1,11 +1,13 @@
 package com.latte.blockchain.impl;
 
-import com.latte.blockchain.NoobChain;
-import com.latte.blockchain.TransactionInput;
-import com.latte.blockchain.TransactionOutput;
+import com.latte.blockchain.entity.LatteCoin;
+import com.latte.blockchain.entity.TransactionInput;
+import com.latte.blockchain.entity.TransactionOutput;
 import com.latte.blockchain.entity.Transaction;
 import com.latte.blockchain.service.ITransactionService;
 import com.latte.blockchain.utils.CryptoUtil;
+
+import org.springframework.stereotype.Service;
 
 import java.security.PrivateKey;
 import java.util.ArrayList;
@@ -14,12 +16,15 @@ import java.util.ArrayList;
  * @author float311
  * @since 2021/01/29
  */
+@Service
 public class TransactionServiceImpl implements ITransactionService {
+
+    private LatteCoin latteCoin = LatteCoin.getInstance();
 
     @Override
     public void generateSignature(PrivateKey privateKey, Transaction transaction) {
         String data = CryptoUtil.getStringFromKey(transaction.getSender()) +
-                CryptoUtil.getStringFromKey(transaction.getReciepient()) +
+                CryptoUtil.getStringFromKey(transaction.getRecipient()) +
                 transaction.getValue();
         transaction.setSignature(CryptoUtil.applySignature(privateKey, data));
     }
@@ -40,41 +45,41 @@ public class TransactionServiceImpl implements ITransactionService {
         // 收集交易输入
         ArrayList<TransactionInput> inputs = transaction.getInputs();
         for (TransactionInput input : inputs) {
-            input.UTXO = NoobChain.UTXOs.get(input.transactionOutputId);
+            input.setUTXO(latteCoin.getUTXOs().get(input.getTransactionOutputId()));
         }
 
         // 检查交易是否有效
         float inputsValue = getInputsValue(inputs);
-        if (inputsValue < NoobChain.minimumTransaction) {
+        if (inputsValue < latteCoin.getMinimumTransaction()) {
             System.out.println("Transaction Inputs too small: " + getInputsValue(inputs));
             return false;
         }
 
         // 计算剩余价值
         float leftOver = inputsValue - transaction.getValue();
-        transaction.setTransactionId(calculateTransactionHash(transaction));
+        transaction.setId(calculateTransactionHash(transaction));
 
         // 将金额发送至接收方
         transaction.getOutputs().add(
-                new TransactionOutput(transaction.getReciepient(),
+                new TransactionOutput(transaction.getRecipient(),
                 transaction.getValue(),
-                transaction.getTransactionId())
+                transaction.getId())
         );
 
         // 将剩余金额返回至发送方
         transaction.getOutputs().add(
                 new TransactionOutput(transaction.getSender(),
                         leftOver,
-                        transaction.getTransactionId())
+                        transaction.getId())
         );
         return true;
     }
 
-    public float getInputsValue(ArrayList<TransactionInput> inputs) {
+    public Float getInputsValue(ArrayList<TransactionInput> inputs) {
         float total = 0;
         for (TransactionInput i : inputs) {
-            if (i.UTXO != null) {
-                total += i.UTXO.value;
+            if (i.getUTXO() != null) {
+                total += i.getUTXO().getValue();
             }
         }
         return total;
@@ -99,7 +104,7 @@ public class TransactionServiceImpl implements ITransactionService {
         transaction.setSequence(transaction.getSequence() + 1);
         return CryptoUtil.applySha256(
                 CryptoUtil.getStringFromKey(transaction.getSender()) +
-                        CryptoUtil.getStringFromKey(transaction.getReciepient()) +
+                        CryptoUtil.getStringFromKey(transaction.getRecipient()) +
                         transaction.getValue() +
                         transaction.getSequence()
         );
