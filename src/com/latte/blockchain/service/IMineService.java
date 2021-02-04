@@ -3,34 +3,34 @@ package com.latte.blockchain.service;
 import com.latte.blockchain.entity.Block;
 import com.latte.blockchain.entity.Transaction;
 
-import java.util.ArrayList;
-
 /**
  * @author float311
- * @since  2021/2/28
+ * @since 2021/2/28
  */
 public interface IMineService {
 
     /**
-     * 挖新的区块
+     * 计算新的区块哈希值并计算默克根
      *
-     * @param difficulty 难度值
-     * @param transactions 交易信息
-     * @return {@link Block} 新区块
+     * @param block 前一区块的Hash值
+     * @return boolean true - 成功挖掘出区块并成功添加到了区块链中
      */
-    Block mineNewBlock(int difficulty, ArrayList<Transaction> transactions);
+    boolean mineNewBlock(Block block);
 
     /**
      * 为区块添加交易信息
      *
+     * @param block       {@link Block} 区块
      * @param transaction {@link Transaction}
      * @return boolean 是否添加成功
      */
-    boolean addTransaction(Transaction transaction);
+    boolean addTransaction(Block block, Transaction transaction);
 
     /**
      * 计算区块哈希值
+     *
+     * @param block 区块
      * @return String
      */
-    String calculateBlockHash();
+    String calculateBlockHash(Block block);
 }

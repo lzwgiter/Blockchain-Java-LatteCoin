@@ -1,9 +1,6 @@
 package com.latte.blockchain.impl;
 
-import com.latte.blockchain.entity.LatteCoin;
-import com.latte.blockchain.entity.Transaction;
-import com.latte.blockchain.entity.TransactionInput;
-import com.latte.blockchain.entity.TransactionOutput;
+import com.latte.blockchain.entity.*;
 import com.latte.blockchain.service.ITransactionService;
 import com.latte.blockchain.service.IWalletService;
 
@@ -23,7 +20,7 @@ import java.util.Map;
 @Service
 public class WalletServiceImpl implements IWalletService {
 
-    private LatteCoin latteCoin = LatteCoin.getInstance();
+    private final LatteChain latteChain = LatteChain.getInstance();
 
     @Autowired
     private ITransactionService transactionService;
@@ -31,17 +28,17 @@ public class WalletServiceImpl implements IWalletService {
     /**
      * 获取账户余额
      *
-     * @param publicKey 用户地址
+     * @param userWallet 用户地址
      * @return Float
      */
     @Override
-    public Float getBalance(PublicKey publicKey) {
+    public float getBalance(Wallet userWallet) {
         float total = 0;
-        HashMap<String, TransactionOutput> UTXOs = latteCoin.getUTXOs();
-        for (Map.Entry<String, TransactionOutput> item : UTXOs.entrySet()) {
+        // 从全局的UTXO中收集该用户的UTXO并进行结算
+        for (Map.Entry<String, TransactionOutput> item : latteChain.getUTXOs().entrySet()) {
             TransactionOutput UTXO = item.getValue();
-            if (UTXO.isbelongto(publicKey)) {
-                UTXOs.put(UTXO.getId(), UTXO);
+            if (UTXO.isBelongTo(userWallet.getPublicKey())) {
+                userWallet.getUTXOs().put(UTXO.getId(), UTXO);
                 total += UTXO.getValue();
             }
         }
@@ -51,25 +48,23 @@ public class WalletServiceImpl implements IWalletService {
     /**
      * 向recipient发起一笔值为value的交易
      *
-     * @param sender           发送方
-     * @param senderPrivateKey 签名秘钥
-     * @param recipient        接收方
-     * @param value            交易值
-     * @return
+     * @param sender    {@link Wallet} 发送方
+     * @param recipient {@link Wallet} 接收方
+     * @param value     交易值
+     * @return {@link Transaction} 交易
      */
     @Override
-    public Transaction sendFunds(PublicKey sender, PrivateKey senderPrivateKey, PublicKey recipient, Float value) {
+    public Transaction sendFunds(Wallet sender, Wallet recipient, float value) {
         if (this.getBalance(sender) < value) {
-            System.out.println("#余额不足. 交易取消");
+            System.out.println("# 余额不足. 交易取消");
             return null;
         }
-        // 交易输入
+
+        // 开始构造交易输入
         ArrayList<TransactionInput> inputs = new ArrayList<>();
-
         float total = 0;
-        HashMap<String, TransactionOutput> UTXOs = this.latteCoin.getUTXOs();
-
-        for (Map.Entry<String, TransactionOutput> item : UTXOs.entrySet()) {
+        for (Map.Entry<String, TransactionOutput> item : sender.getUTXOs().entrySet()) {
+            // 收集交易发起者的所有UTXO
             TransactionOutput utxo = item.getValue();
             total += utxo.getValue();
             inputs.add(new TransactionInput(utxo.getId()));
@@ -79,11 +74,12 @@ public class WalletServiceImpl implements IWalletService {
             }
         }
         // 构造新交易
-        Transaction newTransaction = new Transaction(sender, recipient, value, inputs);
-        transactionService.generateSignature(senderPrivateKey, newTransaction);
+        Transaction newTransaction = new Transaction(sender.getPublicKey(), recipient.getPublicKey(), value, inputs);
+        transactionService.generateSignature(sender.getPrivateKey(), newTransaction);
 
+        // 去除发起者的所有UTXO
         for (TransactionInput input : inputs) {
-            UTXOs.remove(input.getTransactionOutputId());
+            sender.getUTXOs().remove(input.getTransactionOutputId());
         }
         return newTransaction;
     }

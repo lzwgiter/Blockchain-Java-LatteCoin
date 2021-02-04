@@ -1,6 +1,11 @@
 package com.latte.blockchain.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.latte.blockchain.utils.CryptoUtil;
+
+import com.latte.blockchain.utils.JsonUtil;
+import lombok.Data;
 
 import java.security.PublicKey;
 
@@ -8,16 +13,18 @@ import java.security.PublicKey;
  * @author float
  * @since 2021/1/27
  */
+@Data
 public class TransactionOutput {
 
     /**
-     * 标识
+     * id
      */
     private String id;
 
     /**
      * 交易接受方
      */
+    @JsonSerialize(using = JsonUtil.class)
     private PublicKey recipient;
 
     /**
@@ -26,15 +33,15 @@ public class TransactionOutput {
     private float value;
 
     /**
-     * 父交易的id
+     * 新建一个交易输出，并自动计算其交易ID
+     *
+     * @param recipient {@link PublicKey} 接受方
+     * @param value     交易金额
      */
-    private String parentTransactionId;
-
-    public TransactionOutput(PublicKey recipient, float value, String parentTransactionId) {
+    public TransactionOutput(PublicKey recipient, float value) {
         this.recipient = recipient;
         this.value = value;
-        this.parentTransactionId = parentTransactionId;
-        this.id = CryptoUtil.applySha256(CryptoUtil.getStringFromKey(recipient) + value + parentTransactionId);
+        this.id = CryptoUtil.applySha256(CryptoUtil.getStringFromKey(recipient) + value);
     }
 
     /**
@@ -43,39 +50,7 @@ public class TransactionOutput {
      * @param publicKey {@link PublicKey} 用户地址
      * @return boolean
      */
-    public boolean isbelongto(PublicKey publicKey) {
+    public boolean isBelongTo(PublicKey publicKey) {
         return publicKey == recipient;
-    }
-
-    public String getId() {
-        return id;
-    }
-
-    public void setId(String id) {
-        this.id = id;
-    }
-
-    public PublicKey getRecipient() {
-        return recipient;
-    }
-
-    public void setRecipient(PublicKey recipient) {
-        this.recipient = recipient;
-    }
-
-    public float getValue() {
-        return value;
-    }
-
-    public void setValue(float value) {
-        this.value = value;
-    }
-
-    public String getParentTransactionId() {
-        return parentTransactionId;
-    }
-
-    public void setParentTransactionId(String parentTransactionId) {
-        this.parentTransactionId = parentTransactionId;
     }
 }

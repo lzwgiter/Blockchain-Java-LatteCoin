@@ -1,5 +1,6 @@
 package com.latte.blockchain.entity;
 
+import com.latte.blockchain.enums.LatteChainEnum;
 import lombok.Data;
 
 import java.util.ArrayList;
@@ -17,6 +18,11 @@ public class Block {
     private Integer id;
 
     /**
+     * 区块信息
+     */
+    private String msg;
+
+    /**
      * 当前区块哈希值
      */
     private String hash;
@@ -32,9 +38,9 @@ public class Block {
     private String merkleRoot;
 
     /**
-     * 交易信息 {@link Transaction}，最多包含10个交易信息
+     * 交易信息 {@link Transaction}，最多包含MAX_TRANSACTION_AMOUNT个交易信息
      */
-    private ArrayList<Transaction> transactions = new ArrayList<>(10);
+    private ArrayList<Transaction> transactions = new ArrayList<>(LatteChainEnum.MAX_TRANSACTION_AMOUNT);
 
     /**
      * 时间戳
@@ -42,12 +48,14 @@ public class Block {
     private long timeStamp;
 
     /**
-     * Nonce值(计算次数)
+     * Nonce值
      */
     private int nonce;
 
-    public Block(String previousHash) {
+    public Block(String previousHash, String msg) {
         this.previousHash = previousHash;
+        this.msg = msg;
         this.timeStamp = System.currentTimeMillis();
+        this.nonce = 0;
     }
 }

@@ -1,5 +1,6 @@
 package com.latte.blockchain.utils;
 
+import com.latte.blockchain.entity.LatteChain;
 import com.latte.blockchain.entity.Transaction;
 
 import java.nio.charset.StandardCharsets;
@@ -84,23 +85,12 @@ public class CryptoUtil {
     }
 
     /**
-     * 获取json格式数据
-     *
-     * @param o java对象
-     * @return String
-     */
-    public static String getJson(Object o) {
-        return JsonUtil.toJson(o);
-    }
-
-    /**
      * 构造指定难度的0填充字符串
      *
-     * @param difficulty 难度
      * @return String
      */
-    public static String getDifficultyString(int difficulty) {
-        return new String(new char[difficulty]).replace('\0', '0');
+    public static String getDifficultyString() {
+        return new String(new char[LatteChain.getDifficulty()]).replace('\0', '0');
     }
 
     /**
@@ -119,7 +109,7 @@ public class CryptoUtil {
      * @param transactions 交易@{@link Transaction}
      * @return String
      */
-    public static String getMerkleRoot(ArrayList<Transaction> transactions) {
+    public static String calculateMerkleRoot(ArrayList<Transaction> transactions) {
         int count = transactions.size();
 
         List<String> previousTreeLayer = new ArrayList<>();
@@ -130,6 +120,7 @@ public class CryptoUtil {
 
         while (count > 1) {
             treeLayer = new ArrayList<>();
+            // 每次选择两个交易的散列值重新计算
             for (int i = 1; i < previousTreeLayer.size(); i += 2) {
                 treeLayer.add(applySha256(previousTreeLayer.get(i - 1) + previousTreeLayer.get(i)));
             }

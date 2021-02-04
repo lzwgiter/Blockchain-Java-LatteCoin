@@ -22,10 +22,10 @@ public class LatteCoinDemo {
     public static void main(String[] args) {
         SpringApplication.run(LatteCoinDemo.class, args);
     }
-//    /**
-//     * TODO 将MineServiceImpl和TransactionServiceImpl这两个服务编织进来
-//     * @param args
-//     */
+    /**
+     * TODO 将MineServiceImpl和TransactionServiceImpl这两个服务编织进来
+     * @param args
+     */
 //    public static void main(String[] args) {
 //        Security.addProvider(new org.bouncycastle.jce.provider.BouncyCastleProvider());
 //

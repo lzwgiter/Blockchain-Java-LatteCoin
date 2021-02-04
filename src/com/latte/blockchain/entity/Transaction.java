@@ -1,6 +1,8 @@
 package com.latte.blockchain.entity;
 
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.latte.blockchain.utils.CryptoUtil;
+import com.latte.blockchain.utils.JsonUtil;
 import lombok.Data;
 
 import java.security.PublicKey;
@@ -23,15 +25,17 @@ public class Transaction {
     /**
      * 发送方的地址(公钥)
      */
+    @JsonSerialize(using = JsonUtil.class)
     private PublicKey sender;
 
     /**
      * 接受方的地址(公钥)
      */
+    @JsonSerialize(using = JsonUtil.class)
     private PublicKey recipient;
 
     /**
-     * 发送的金额
+     * 交易金额
      */
     private Float value;
 
@@ -63,8 +67,8 @@ public class Transaction {
     /**
      * 交易
      *
-     * @param sender    {@link PublicKey} 发送方地址
-     * @param recipient {@link PublicKey} 接受方地址
+     * @param sender    发送方地址
+     * @param recipient 接受方地址
      * @param value     交易金额
      * @param inputs    交易输入
      */
@@ -73,6 +77,20 @@ public class Transaction {
         this.recipient = recipient;
         this.value = value;
         this.inputs = inputs;
-        this.data = CryptoUtil.getStringFromKey(sender) + CryptoUtil.getStringFromKey(recipient) + value;
+        this.data = this.getSenderString() + this.getRecipientString() + value;
+    }
+
+    public String getSenderString() {
+        if (this.sender == null) {
+            // 币基交易
+            return "";
+        } else {
+            return CryptoUtil.getStringFromKey(this.sender);
+
+        }
+    }
+
+    public String getRecipientString() {
+        return CryptoUtil.getStringFromKey(this.recipient);
     }
 }
