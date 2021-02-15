@@ -1,5 +1,6 @@
 package com.latte.blockchain.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.latte.blockchain.utils.CryptoUtil;
 import com.latte.blockchain.utils.JsonUtil;
@@ -15,7 +16,7 @@ import java.util.ArrayList;
  * @since 2021/1/27
  */
 @Data
-public class Transaction {
+public class Transaction implements Cloneable {
 
     /**
      * 交易的id
@@ -42,6 +43,7 @@ public class Transaction {
     /**
      * 交易签名信息
      */
+    @JsonIgnore
     private byte[] signature;
 
     /**
@@ -52,16 +54,18 @@ public class Transaction {
     /**
      * 交易输出
      */
-    private ArrayList<TransactionOutput> outputs = new ArrayList<>();
+    private ArrayList<TransactionOutput> outputs;
 
     /**
      * 记录交易数量
      */
+    @JsonIgnore
     private Integer sequence = 0;
 
     /**
      * 数据
      */
+    @JsonIgnore
     private String data;
 
     /**
@@ -77,6 +81,7 @@ public class Transaction {
         this.recipient = recipient;
         this.value = value;
         this.inputs = inputs;
+        this.outputs = new ArrayList<>();
         this.data = this.getSenderString() + this.getRecipientString() + value;
     }
 
@@ -92,5 +97,21 @@ public class Transaction {
 
     public String getRecipientString() {
         return CryptoUtil.getStringFromKey(this.recipient);
+    }
+
+    public boolean equals(Transaction transaction) {
+        return transaction.getInputs().equals(this.inputs) && transaction.getData().equals(this.data);
+    }
+
+    @Override
+    public Transaction clone() {
+        try {
+            Transaction cloneTransaction = (Transaction) super.clone();
+            cloneTransaction.setOutputs((ArrayList<TransactionOutput>) this.outputs.clone());
+            cloneTransaction.setInputs((ArrayList<TransactionInput>) this.inputs.clone());
+            return cloneTransaction;
+        } catch (CloneNotSupportedException e) {
+            throw new RuntimeException(e);
+        }
     }
 }

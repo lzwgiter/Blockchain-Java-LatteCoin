@@ -1,17 +1,24 @@
 package com.latte.blockchain.service;
 
 import com.latte.blockchain.entity.Transaction;
-import com.latte.blockchain.entity.TransactionInput;
-import com.latte.blockchain.entity.TransactionOutput;
 
 import java.security.PrivateKey;
-import java.util.ArrayList;
 
 /**
  * @author float311
  * @since 2021/01/28
  */
 public interface ITransactionService {
+
+    /**
+     * 发起一笔交易
+     *
+     * @param sender    交易发起方
+     * @param recipient 交易接受方
+     * @param value     交易金额
+     * @return String 交易信息
+     */
+    String createTransaction(String sender, String recipient, float value);
 
     /**
      * 获取交易输入的总值
@@ -44,6 +51,14 @@ public interface ITransactionService {
      * @return 交易成功则返回true
      */
     boolean processTransaction(Transaction transaction);
+
+    /**
+     * 检查是否是有效的交易
+     *
+     * @param transaction {@link Transaction} 交易信息
+     * @return 是则返回true
+     */
+    boolean isValidTransaction(Transaction transaction);
 
     /**
      * 验证交易签名

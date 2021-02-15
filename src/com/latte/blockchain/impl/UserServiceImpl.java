@@ -4,11 +4,14 @@ import com.latte.blockchain.entity.LatteChain;
 import com.latte.blockchain.entity.Wallet;
 import com.latte.blockchain.enums.LatteChainEnum;
 import com.latte.blockchain.service.IUserService;
+import com.latte.blockchain.service.IWalletService;
 import com.latte.blockchain.utils.CryptoUtil;
 import com.latte.blockchain.utils.JsonUtil;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.security.PublicKey;
+import java.util.Map;
 
 /**
  * @author float311
@@ -19,13 +22,17 @@ public class UserServiceImpl implements IUserService {
 
     private final LatteChain latteChain = LatteChain.getInstance();
 
+    @Autowired
+    private IWalletService walletService;
+
     /**
      * 初始化区块链系统中预置账户信息
+     *
      * @return String coinbase账户的账户地址
      */
     @Override
     public String initUser() {
-        // 添加并初始化coinbase账户
+        // 添加并初始化所有账户
         Wallet newUser = new Wallet();
         String coinbaseAddress = CryptoUtil.getStringFromKey(newUser.getPublicKey());
         latteChain.getUsers().put(coinbaseAddress, newUser);
@@ -50,6 +57,10 @@ public class UserServiceImpl implements IUserService {
 
     @Override
     public String getAllUsersInfo() {
+        // 刷新所有用戶的信息
+        for (String address : latteChain.getUsers().keySet()) {
+            walletService.getBalance(address);
+        }
         return JsonUtil.toJson(latteChain.getUsers());
     }
 }

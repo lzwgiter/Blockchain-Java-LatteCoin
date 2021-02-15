@@ -24,15 +24,20 @@ public class LatteChainEnum {
     /**
      * 系统预置账户数量
      */
-    public static final int INIT_ACCOUNT_AMOUNTS = 10;
+    public static final int INIT_ACCOUNT_AMOUNTS = 3;
 
     /**
      * 每个区块所能包含的最大交易数量
      */
-    public static final int MAX_TRANSACTION_AMOUNT = 10;
+    public static final int MAX_TRANSACTION_AMOUNT = 4;
 
     /**
-     * 出块奖励：5个latte coin
+     * 出块奖励：5个LC(Latte Coin)
      */
-    public static final float SUBSIDY = 5;
+    public static final float BLOCK_SUBSIDY = 5;
+
+    /**
+     * 每包含一个交易信息则奖励0.01个LC
+     */
+    public static final float TRANSACTION_SUBSIDY = 0.01f;
 }

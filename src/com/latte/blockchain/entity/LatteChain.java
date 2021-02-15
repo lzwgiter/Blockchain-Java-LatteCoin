@@ -1,5 +1,6 @@
 package com.latte.blockchain.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.Data;
 
 import java.util.ArrayList;
@@ -26,6 +27,7 @@ public class LatteChain {
     /**
      * 区块链中的用户信息
      */
+    @JsonIgnore
     private HashMap<String, Wallet> users = new HashMap<>();
 
     /**

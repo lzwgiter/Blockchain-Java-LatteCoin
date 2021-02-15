@@ -9,29 +9,20 @@ import java.util.ArrayList;
  * @since 2021/02/03
  */
 public interface IChainService {
+
     /**
-     * 初始化LatteChain区块链
+     * 初始化一个区块链系统
      *
-     * @return 初始化成功则返回true
+     * @return 成功则返回true
      */
     boolean initChain();
 
     /**
-     * 创建一个新的区块
+     * 查看当前区块链
      *
-     * @param preHash 前一区块哈希值
-     * @param msg     区块中附带的信息
-     * @return {@link Block}
+     * @return 当前区块链信息
      */
-    Block createBlock(String preHash, String msg);
-
-    /**
-     * 检查并添加新的区块到区块链中
-     *
-     * @param blockToAdd 待添加的区块
-     * @return boolean 添加成功则返回true
-     */
-    boolean addBlock(Block blockToAdd);
+    String queryChain();
 
     /**
      * 检查当前链上区块是否都有效

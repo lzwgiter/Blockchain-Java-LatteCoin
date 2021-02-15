@@ -45,6 +45,13 @@ public class WalletServiceImpl implements IWalletService {
         return total;
     }
 
+    @Override
+    public float getBalance(String address) {
+        address = address.replace(" ", "+");
+        Wallet userWallet = latteChain.getUsers().get(address);
+        return getBalance(userWallet);
+    }
+
     /**
      * 向recipient发起一笔值为value的交易
      *
@@ -56,6 +63,7 @@ public class WalletServiceImpl implements IWalletService {
     @Override
     public Transaction sendFunds(Wallet sender, Wallet recipient, float value) {
         if (this.getBalance(sender) < value) {
+            // 发起方余额不足，取消交易
             System.out.println("# 余额不足. 交易取消");
             return null;
         }
@@ -63,13 +71,14 @@ public class WalletServiceImpl implements IWalletService {
         // 开始构造交易输入
         ArrayList<TransactionInput> inputs = new ArrayList<>();
         float total = 0;
+        TransactionOutput utxo;
         for (Map.Entry<String, TransactionOutput> item : sender.getUTXOs().entrySet()) {
             // 收集交易发起者的所有UTXO
-            TransactionOutput utxo = item.getValue();
+            utxo = item.getValue();
             total += utxo.getValue();
             inputs.add(new TransactionInput(utxo.getId()));
             // 已经满足支出需求
-            if (total > value) {
+            if (total >= value) {
                 break;
             }
         }
@@ -77,7 +86,7 @@ public class WalletServiceImpl implements IWalletService {
         Transaction newTransaction = new Transaction(sender.getPublicKey(), recipient.getPublicKey(), value, inputs);
         transactionService.generateSignature(sender.getPrivateKey(), newTransaction);
 
-        // 去除发起者的所有UTXO
+        // 扣除发起者的花费的UTXO(从全局和个人钱包里)
         for (TransactionInput input : inputs) {
             sender.getUTXOs().remove(input.getTransactionOutputId());
         }
