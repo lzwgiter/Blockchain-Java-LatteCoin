@@ -1,3 +1,6 @@
+# IDEA Project files
+.idea/
+
 # Build and Release Folders
 target/
 bin-debug/
