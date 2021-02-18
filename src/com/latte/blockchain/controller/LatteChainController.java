@@ -29,7 +29,7 @@ public class LatteChainController {
     private ITransactionService transactionService;
 
     /**
-     * 初始化LatteChain区块链系统
+     * 初始化LatteChain区块链系统，初始化预置账户并创建创世块
      */
     @GetMapping("/init")
     public String initSystem() {
@@ -40,6 +40,14 @@ public class LatteChainController {
         }
     }
 
+    /**
+     * 交易发起接口
+     *
+     * @param sender    发起方账户地址
+     * @param recipient 接受方账户地址
+     * @param value     交易金额
+     * @return String
+     */
     @PostMapping(path = "/trade")
     public String sendFunds(@RequestParam(name = "sender") String sender,
                             @RequestParam(name = "recipient") String recipient,
@@ -47,11 +55,22 @@ public class LatteChainController {
         return transactionService.createTransaction(sender, recipient, value);
     }
 
+    /**
+     * 查询指定账户的余额
+     *
+     * @param address 查询对象的账户地址
+     * @return String
+     */
     @GetMapping(path = "/queryBalance")
     public String getUserBalance(@RequestParam(name = "address") String address) {
         return "余额：" + walletService.getBalance(address) + "LC";
     }
 
+    /**
+     * 查看当前链的信息
+     *
+     * @return String
+     */
     @GetMapping(path = "/checkChain")
     public String getLatteChain() {
         return chainService.queryChain();

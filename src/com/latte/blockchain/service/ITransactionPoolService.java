@@ -3,6 +3,7 @@ package com.latte.blockchain.service;
 import com.latte.blockchain.entity.Transaction;
 
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 
 /**
  * @author float311
@@ -23,19 +24,27 @@ public interface ITransactionPoolService {
      *
      * @return ArrayList<Transaction>
      */
-    ArrayList<Transaction> getTransactions(int opt);
+    ArrayList<Transaction> getTransactions();
 
     /**
      * 从交易池中删除一个交易信息
      *
-     * @param transaction {@link Transaction}
+     * @param id 索引
      */
-    void removeTransaction(Transaction transaction);
+    void removeTransaction(String id);
 
     /**
-     * 获取当前交易池的大小
+     * 判断当前池中是否包含该交易
      *
-     * @return 交易池的大小
+     * @param id 键
+     * @return 是则返回true
      */
-    int getPoolSize();
+    boolean containsKey(String id);
+
+    /**
+     * 判断当前池子是否为空
+     *
+     * @return boolean
+     */
+    boolean isEmpty();
 }

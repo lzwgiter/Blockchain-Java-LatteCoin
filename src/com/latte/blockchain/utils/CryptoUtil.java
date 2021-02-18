@@ -2,6 +2,7 @@ package com.latte.blockchain.utils;
 
 import com.latte.blockchain.entity.LatteChain;
 import com.latte.blockchain.entity.Transaction;
+import com.latte.blockchain.enums.LatteChainEnum;
 
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
@@ -90,7 +91,7 @@ public class CryptoUtil {
      * @return String
      */
     public static String getDifficultyString() {
-        return new String(new char[LatteChain.getDifficulty()]).replace('\0', '0');
+        return new String(new char[LatteChainEnum.DIFFICULTY]).replace('\0', '0');
     }
 
     /**

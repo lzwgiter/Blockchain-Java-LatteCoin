@@ -1,9 +1,6 @@
 package com.latte.blockchain.impl;
 
-import com.latte.blockchain.entity.LatteChain;
-import com.latte.blockchain.entity.TransactionInput;
-import com.latte.blockchain.entity.TransactionOutput;
-import com.latte.blockchain.entity.Transaction;
+import com.latte.blockchain.entity.*;
 import com.latte.blockchain.service.ITransactionPoolService;
 import com.latte.blockchain.service.ITransactionService;
 import com.latte.blockchain.service.IWalletService;
@@ -14,7 +11,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.security.PrivateKey;
-import java.util.ArrayList;
+import java.util.LinkedHashMap;
 
 /**
  * @author float311
@@ -24,6 +21,8 @@ import java.util.ArrayList;
 public class TransactionServiceImpl implements ITransactionService {
 
     private final LatteChain latteChain = LatteChain.getInstance();
+
+    private final LinkedHashMap<String, Transaction> pool = TransactionPool.getTransactionPool().getPool();
 
     @Autowired
     private IWalletService walletService;
@@ -49,7 +48,7 @@ public class TransactionServiceImpl implements ITransactionService {
         // 若交易建立成功，则将交易放入交易池
         if (newTransaction != null) {
             transactionPoolService.addTransaction(newTransaction);
-            return "交易成功建立！交易信息:\n" + JsonUtil.toJson(newTransaction);
+            return JsonUtil.toJson(newTransaction);
         } else {
             return "账户[" + sender + "]余额不足，交易失败！";
         }
@@ -57,10 +56,7 @@ public class TransactionServiceImpl implements ITransactionService {
 
     @Override
     public void generateSignature(PrivateKey privateKey, Transaction transaction) {
-        String data = transaction.getSenderString() +
-                transaction.getRecipientString() +
-                transaction.getValue();
-        transaction.setSignature(CryptoUtil.applySignature(privateKey, data));
+        transaction.setSignature(CryptoUtil.applySignature(privateKey, transaction.getData()));
     }
 
     /**
@@ -78,6 +74,7 @@ public class TransactionServiceImpl implements ITransactionService {
             return false;
         }
 
+        // 从全局UTXO中收集当前交易所需的UTXO
         for (TransactionInput input : transaction.getInputs()) {
             if (latteChain.getUTXOs().containsKey(input.getTransactionOutputId())) {
                 input.setUTXO(latteChain.getUTXOs().get(input.getTransactionOutputId()));
@@ -87,13 +84,14 @@ public class TransactionServiceImpl implements ITransactionService {
             }
         }
 
-        // 检查交易输入是否符合最低交易金额TODO: 应该检查这笔交易的交易金额而不是输入的金额！
+        // 检查交易输入是否符合最低交易金额
         float inputsValue = getInputsValue(transaction);
         float minimum = latteChain.getMinimumTransactionValue();
         if (inputsValue - transaction.getValue() < minimum) {
             System.out.println("交易金额过小");
             return false;
         }
+
         // 扣除交易方的UTXO
         for (TransactionInput input : transaction.getInputs()) {
             latteChain.getUTXOs().remove(input.getTransactionOutputId());
@@ -101,8 +99,6 @@ public class TransactionServiceImpl implements ITransactionService {
 
         // 计算剩余价值
         float leftOver = inputsValue - transaction.getValue();
-        // 设置交易ID
-        transaction.setId(calculateTransactionHash(transaction));
 
         // 将金额发送至接收方
         transaction.getOutputs().add(new TransactionOutput(transaction.getRecipient(), transaction.getValue()));
@@ -115,7 +111,7 @@ public class TransactionServiceImpl implements ITransactionService {
     /**
      * 获取交易输入的总值
      *
-     * @param transaction 交易
+     * @param transaction 待计算交易
      * @return 输入总值
      */
     @Override
@@ -132,7 +128,7 @@ public class TransactionServiceImpl implements ITransactionService {
     /**
      * 获取交易输出的总值
      *
-     * @param transaction 交易
+     * @param transaction 待计算交易
      * @return 输出总值
      */
     @Override
@@ -181,12 +177,7 @@ public class TransactionServiceImpl implements ITransactionService {
 
     @Override
     public String calculateTransactionHash(Transaction transaction) {
-        transaction.setSequence(transaction.getSequence() + 1);
-        return CryptoUtil.applySha256(
-                transaction.getSenderString() +
-                        transaction.getRecipientString() +
-                        transaction.getValue() +
-                        transaction.getSequence());
+        return CryptoUtil.applySha256(transaction.getData());
     }
 
 }

@@ -25,6 +25,12 @@ import java.util.HashMap;
 public class Wallet {
 
     /**
+     * 用户名
+     */
+    @Getter
+    private String name;
+
+    /**
      * 用户私钥信息
      */
     @Getter
@@ -61,8 +67,8 @@ public class Wallet {
             publicKey = keyPair.getPublic();
 
             String publicKeyString = CryptoUtil.getStringFromKey(publicKey);
-            IMineService mineService = new MineServiceImpl();
-            workerThread = new Thread(mineService, publicKeyString);
+            name = publicKeyString.substring(94);
+            workerThread = new Thread(new MineServiceImpl(), name);
         } catch (Exception e) {
             throw new RuntimeException(e);
         }

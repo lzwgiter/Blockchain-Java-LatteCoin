@@ -16,10 +16,15 @@ public class LatteChainEnum {
     public static final String ZERO_HASH = "0";
 
     /**
+     * 难度值
+     */
+    public static final Integer DIFFICULTY = 4;
+
+    /**
      * 难度字符串
      */
     public static final String TARGET_HASH = new String(
-            new char[LatteChain.getDifficulty()]).replace('\0', '0');
+            new char[DIFFICULTY]).replace('\0', '0');
 
     /**
      * 系统预置账户数量

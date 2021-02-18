@@ -62,8 +62,6 @@ public class ChainServiceImpl implements IChainService {
                 return false;
             }
 
-            //loop through blockchains transactions:
-            // TransactionOutput tempOutput;
             for (int t = 0; t < currentBlock.getTransactions().size(); t++) {
                 Transaction currentTransaction = currentBlock.getTransactions().get(t);
                 if (!transactionService.isValidTransaction(currentTransaction)) {

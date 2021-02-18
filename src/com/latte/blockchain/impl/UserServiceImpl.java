@@ -34,12 +34,11 @@ public class UserServiceImpl implements IUserService {
     public String initUser() {
         // 添加并初始化所有账户
         Wallet newUser = new Wallet();
-        String coinbaseAddress = CryptoUtil.getStringFromKey(newUser.getPublicKey());
+        String coinbaseAddress = newUser.getName();
         latteChain.getUsers().put(coinbaseAddress, newUser);
         for (int i = 1; i < LatteChainEnum.INIT_ACCOUNT_AMOUNTS; i++) {
             newUser = new Wallet();
-            latteChain.getUsers().put(
-                    CryptoUtil.getStringFromKey(newUser.getPublicKey()), newUser);
+            latteChain.getUsers().put(newUser.getName(), newUser);
         }
         return coinbaseAddress;
     }

@@ -1,6 +1,7 @@
 package com.latte.blockchain.entity;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.latte.blockchain.enums.LatteChainEnum;
 import lombok.Data;
 
 import java.util.ArrayList;
@@ -36,11 +37,6 @@ public class LatteChain {
     private final float minimumTransactionValue = 0.1f;
 
     /**
-     * 难度值
-     */
-    private static final Integer DIFFICULTY = 3;
-
-    /**
      * UTXOS
      */
     private HashMap<String, TransactionOutput> UTXOs = new HashMap<>();
@@ -53,10 +49,6 @@ public class LatteChain {
 
     public float getMinimumTransactionValue() {
         return minimumTransactionValue;
-    }
-
-    public static Integer getDifficulty() {
-        return DIFFICULTY;
     }
 
     public ArrayList<Block> getBlockchain() {

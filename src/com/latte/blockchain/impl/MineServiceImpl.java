@@ -9,6 +9,7 @@ import org.springframework.stereotype.Service;
 
 import java.security.PublicKey;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.Map;
 
 
@@ -22,6 +23,8 @@ import java.util.Map;
 public class MineServiceImpl implements IMineService {
 
     private final LatteChain latteChain = LatteChain.getInstance();
+
+    private final LinkedHashMap<String, Transaction> pool = TransactionPool.getTransactionPool().getPool();
 
     private IUserService userService;
 
@@ -39,49 +42,45 @@ public class MineServiceImpl implements IMineService {
         userService = BeanContext.getApplicationContext().getBean(UserServiceImpl.class);
         boolean flag = false;
         while (true) {
-            // 构造区块
-            int currentHeight = latteChain.getBlockchain().size();
-            String preHash = latteChain.getBlockchain().get(currentHeight - 1).getHash();
-            Block newBlock = createNewBlock(preHash, Thread.currentThread().getName());
-            newBlock.setId(currentHeight);
-
-            // 抓取交易池中的交易
-            int poolSize = poolService.getPoolSize();
-            ArrayList<Transaction> transactions;
-            if (poolSize >= LatteChainEnum.MAX_TRANSACTION_AMOUNT) {
-                transactions = poolService.getTransactions(1);
-            } else if (poolSize > 0) {
-                transactions = poolService.getTransactions(0);
-            } else {
-                try {
-                    Thread.sleep(1000);
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
+            synchronized (pool) {
+                if (poolService.isEmpty()) {
+                    try {
+                        pool.wait();
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    }
                 }
-                continue;
-            }
 
-            // 将所有从交易池中获取的交易信息都添加到当前新构造的区块中
-            for (Transaction transaction : transactions) {
-                if(!addTransaction(newBlock, transaction)) {
-                    // 交易处理失败(其他线程已经挖出矿)
-                    flag = true;
-                    break;
+                // 抓取交易池中的交易
+                ArrayList<Transaction> transactions;
+                transactions = poolService.getTransactions();
+
+                // 构造区块
+                int currentHeight = latteChain.getBlockchain().size();
+                String preHash = latteChain.getBlockchain().get(currentHeight - 1).getHash();
+                Block newBlock = createNewBlock(preHash, Thread.currentThread().getName());
+                newBlock.setId(currentHeight);
+
+                // 将所有从交易池中获取的交易信息都添加到当前新构造的区块中
+                for (Transaction transaction : transactions) {
+                    if (!addTransaction(newBlock, transaction)) {
+                        // 交易信息无效(签名信息错误、不满足最低金额)
+                        flag = true;
+                        break;
+                    }
                 }
-            }
-            if (flag) {
-                continue;
-            }
+                if (flag) {
+                    continue;
+                }
 
-            // 计算新区块的哈希值
-            mineNewBlock(newBlock);
-            if (latteChain.getBlockchain().size() == currentHeight) {
+                // 计算新区块的哈希值
+                mineNewBlock(newBlock);
                 // 提交新的区块并获取奖励
                 if (this.addBlock(newBlock)) {
                     // 将当前交易记在系统全局UTXO中并从池中删除已经消耗的交易
                     for (Transaction transaction : transactions) {
                         addToGlobal(transaction);
-                        poolService.removeTransaction(transaction);
+                        poolService.removeTransaction(transaction.getId());
                     }
                 }
             }
@@ -96,6 +95,7 @@ public class MineServiceImpl implements IMineService {
     @Override
     public boolean initChain() {
         userService = BeanContext.getApplicationContext().getBean(UserServiceImpl.class);
+        transactionService = BeanContext.getApplicationContext().getBean(TransactionServiceImpl.class);
 
         // 初始化系统预置用户信息
         String coinbaseAddress = userService.initUser();
@@ -107,6 +107,7 @@ public class MineServiceImpl implements IMineService {
                 new ArrayList<>());
         // 添加输入输出信息
         // coinbase交易无输入，这里使用"-1"来代表
+        genesisTransaction.setId(transactionService.calculateTransactionHash(genesisTransaction));
         genesisTransaction.getInputs().add(new TransactionInput("-1"));
         genesisTransaction.getOutputs().add(
                 new TransactionOutput(
@@ -132,8 +133,10 @@ public class MineServiceImpl implements IMineService {
     public void addToGlobal(Transaction transaction) {
         // 将当前交易记在系统全局UTXO中
         for (TransactionOutput output : transaction.getOutputs()) {
-            latteChain.getUTXOs().put(output.getId(), output);
-            System.out.println("交易" + output.getId() + "执行成功！");
+            if (!latteChain.getUTXOs().containsKey(output.getId())) {
+                latteChain.getUTXOs().put(output.getId(), output);
+                System.out.println("交易" + output.getId() + "执行成功！");
+            }
         }
     }
 
@@ -149,6 +152,7 @@ public class MineServiceImpl implements IMineService {
                 LatteChainEnum.TRANSACTION_SUBSIDY * block.getTransactions().size();
         PublicKey account = userService.getUserPublicKey(address);
         Transaction rewardTransaction = new Transaction(null, account, rewardValue, new ArrayList<>());
+        rewardTransaction.setId(transactionService.calculateTransactionHash(rewardTransaction));
         rewardTransaction.getInputs().add(new TransactionInput("-1"));
         rewardTransaction.getOutputs().add(new TransactionOutput(account, rewardTransaction.getValue()));
         // 将奖励交易放入交易池中
@@ -162,7 +166,7 @@ public class MineServiceImpl implements IMineService {
      * @return boolean 添加成功则返回true
      */
     @Override
-    public synchronized boolean addBlock(Block blockToAdd) {
+    public boolean addBlock(Block blockToAdd) {
         int currentHeight = latteChain.getBlockchain().size();
         if (currentHeight == 0) {
             // 当前待添加块为创世块
@@ -176,6 +180,7 @@ public class MineServiceImpl implements IMineService {
             Block preBlock = this.latteChain.getBlockchain().get(currentHeight - 1);
             if (isValidBlock(preBlock, blockToAdd)) {
                 this.latteChain.getBlockchain().add(blockToAdd);
+                // 奖励矿工
                 rewardMiner(blockToAdd.getMsg(), blockToAdd);
                 return true;
             } else {
@@ -196,9 +201,8 @@ public class MineServiceImpl implements IMineService {
     @Override
     public boolean isValidBlock(Block preBlock, Block block) {
         IMineService mineService = new MineServiceImpl();
-        Integer difficulty = LatteChain.getDifficulty();
         // 检查哈希值是否有效
-        if (!block.getHash().substring(0, difficulty).equals(LatteChainEnum.TARGET_HASH)) {
+        if (!block.getHash().substring(0, LatteChainEnum.DIFFICULTY).equals(LatteChainEnum.TARGET_HASH)) {
             System.out.println("# 区块哈希值不符合条件");
             return false;
         }
@@ -218,9 +222,11 @@ public class MineServiceImpl implements IMineService {
         // 检查区块中所包含的交易是否都是合法的
         ArrayList<Transaction> transactionsList = block.getTransactions();
         for (Transaction transaction : transactionsList) {
-            if (!transactionService.isValidTransaction(transaction)) {
-                System.out.println("# 当前区块中交易[ " + transaction.getId() + "] 不合法");
-                return false;
+            if (transaction.getSender() != null) {
+                if (!transactionService.isValidTransaction(transaction)) {
+                    System.out.println("# 当前区块中交易[ " + transaction.getId() + "] 不合法");
+                    return false;
+                }
             }
         }
 
@@ -249,7 +255,7 @@ public class MineServiceImpl implements IMineService {
         String difficultyString = CryptoUtil.getDifficultyString();
         block.setMerkleRoot(CryptoUtil.calculateMerkleRoot(block.getTransactions()));
         String hash = this.calculateBlockHash(block);
-        while (!hash.substring(0, LatteChain.getDifficulty()).equals(difficultyString)) {
+        while (!hash.substring(0, LatteChainEnum.DIFFICULTY).equals(difficultyString)) {
             block.setNonce(block.getNonce() + 1);
             hash = this.calculateBlockHash(block);
         }
@@ -276,10 +282,17 @@ public class MineServiceImpl implements IMineService {
         }
 
         if (!block.getPreviousHash().equals(LatteChainEnum.ZERO_HASH)) {
-            // 非初始块则检查交易合法性(输入输出是否匹配、签名是否正确)并计算交易的信息(交易id、消耗，找零的UTXO)
-            if (!transactionService.processTransaction(transaction)) {
-                System.out.println(Thread.currentThread().getName() + ": 交易处理失败");
+            // 非初始块
+            if (!pool.containsKey(transaction.getId())) {
+                // 当前交易已被消耗
                 return false;
+            }
+            if (transaction.getSender() != null) {
+                // 非奖励交易则检查交易合法性(输入输出是否匹配、签名是否正确)并计算交易的信息(交易id、消耗，找零的UTXO)
+                if (!transactionService.processTransaction(transaction)) {
+                    // 交易不合法或当前交易已经被消耗
+                    return false;
+                }
             }
         }
 

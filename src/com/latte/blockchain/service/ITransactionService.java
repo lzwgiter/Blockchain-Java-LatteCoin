@@ -45,7 +45,7 @@ public interface ITransactionService {
     void generateSignature(PrivateKey privateKey, Transaction transaction);
 
     /**
-     * 进行交易
+     * 执行交易(将交易的输出加到全局账本中)
      *
      * @param transaction {@link Transaction} 交易
      * @return 交易成功则返回true

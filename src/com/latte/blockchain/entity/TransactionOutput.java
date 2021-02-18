@@ -33,6 +33,11 @@ public class TransactionOutput {
     private float value;
 
     /**
+     * 时间戳
+     */
+    private long timeStamp;
+
+    /**
      * 新建一个交易输出，并自动计算其交易ID
      *
      * @param recipient {@link PublicKey} 接受方
@@ -41,7 +46,8 @@ public class TransactionOutput {
     public TransactionOutput(PublicKey recipient, float value) {
         this.recipient = recipient;
         this.value = value;
-        this.id = CryptoUtil.applySha256(CryptoUtil.getStringFromKey(recipient) + value);
+        this.timeStamp = System.currentTimeMillis();
+        this.id = CryptoUtil.applySha256(CryptoUtil.getStringFromKey(recipient) + value + timeStamp);
     }
 
     /**

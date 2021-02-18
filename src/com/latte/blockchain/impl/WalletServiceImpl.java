@@ -72,8 +72,9 @@ public class WalletServiceImpl implements IWalletService {
         ArrayList<TransactionInput> inputs = new ArrayList<>();
         float total = 0;
         TransactionOutput utxo;
+
+        // 收集交易发起者的所有UTXO
         for (Map.Entry<String, TransactionOutput> item : sender.getUTXOs().entrySet()) {
-            // 收集交易发起者的所有UTXO
             utxo = item.getValue();
             total += utxo.getValue();
             inputs.add(new TransactionInput(utxo.getId()));
@@ -84,7 +85,10 @@ public class WalletServiceImpl implements IWalletService {
         }
         // 构造新交易
         Transaction newTransaction = new Transaction(sender.getPublicKey(), recipient.getPublicKey(), value, inputs);
+        // 计算交易ID
+        newTransaction.setId(transactionService.calculateTransactionHash(newTransaction));
         transactionService.generateSignature(sender.getPrivateKey(), newTransaction);
+
 
         // 扣除发起者的花费的UTXO(从全局和个人钱包里)
         for (TransactionInput input : inputs) {

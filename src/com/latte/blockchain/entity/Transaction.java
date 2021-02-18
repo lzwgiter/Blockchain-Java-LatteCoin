@@ -57,13 +57,12 @@ public class Transaction implements Cloneable {
     private ArrayList<TransactionOutput> outputs;
 
     /**
-     * 记录交易数量
+     * 时间戳
      */
-    @JsonIgnore
-    private Integer sequence = 0;
+    private long timeStamp;
 
     /**
-     * 数据
+     * 数据 - 由交易双方、交易金额、时间戳组成
      */
     @JsonIgnore
     private String data;
@@ -82,7 +81,8 @@ public class Transaction implements Cloneable {
         this.value = value;
         this.inputs = inputs;
         this.outputs = new ArrayList<>();
-        this.data = this.getSenderString() + this.getRecipientString() + value;
+        this.timeStamp = System.currentTimeMillis();
+        this.data = this.getSenderString() + this.getRecipientString() + value + timeStamp;
     }
 
     public String getSenderString() {
