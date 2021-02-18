@@ -1,4 +1,5 @@
 # Build and Release Folders
+target/
 bin-debug/
 bin-release/
 [Oo]bj/
