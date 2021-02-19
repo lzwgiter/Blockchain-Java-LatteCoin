@@ -10,7 +10,7 @@
     <packaging>jar</packaging>
 
     <name>LatteCoin</name>
-    <description>a Traceable and anonymous blockchain system</description>
+    <description>LatteCoin: a Traceable and anonymous blockchain system</description>
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
