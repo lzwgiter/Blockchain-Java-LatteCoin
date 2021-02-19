@@ -5,13 +5,11 @@ import com.latte.blockchain.entity.Wallet;
 import com.latte.blockchain.enums.LatteChainEnum;
 import com.latte.blockchain.service.IUserService;
 import com.latte.blockchain.service.IWalletService;
-import com.latte.blockchain.utils.CryptoUtil;
 import com.latte.blockchain.utils.JsonUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.security.PublicKey;
-import java.util.Map;
 
 /**
  * @author float311

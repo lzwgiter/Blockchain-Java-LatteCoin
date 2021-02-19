@@ -1,13 +1,14 @@
 package com.latte.blockchain.entity;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.latte.blockchain.utils.CryptoUtil;
 import com.latte.blockchain.utils.JsonUtil;
-import lombok.Data;
 
 import java.security.PublicKey;
 import java.util.ArrayList;
+
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import lombok.Data;
 
 /**
  * 交易类

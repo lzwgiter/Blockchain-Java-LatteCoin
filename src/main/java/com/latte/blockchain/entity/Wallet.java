@@ -1,12 +1,8 @@
 package com.latte.blockchain.entity;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.latte.blockchain.impl.MineServiceImpl;
-import com.latte.blockchain.service.IMineService;
 import com.latte.blockchain.utils.CryptoUtil;
 import com.latte.blockchain.utils.JsonUtil;
-import lombok.Getter;
 
 import java.security.PublicKey;
 import java.security.PrivateKey;
@@ -15,6 +11,10 @@ import java.security.KeyPair;
 import java.security.SecureRandom;
 import java.security.spec.ECGenParameterSpec;
 import java.util.HashMap;
+
+import lombok.Getter;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 
 /**
  * 钱包类

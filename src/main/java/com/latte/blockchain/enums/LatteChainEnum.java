@@ -1,7 +1,5 @@
 package com.latte.blockchain.enums;
 
-import com.latte.blockchain.entity.LatteChain;
-
 /**
  * 常量
  *
