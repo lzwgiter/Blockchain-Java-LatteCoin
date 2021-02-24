@@ -1,5 +1,6 @@
 package com.latte.blockchain.impl;
 
+import com.latte.blockchain.dao.UtxoDao;
 import com.latte.blockchain.entity.*;
 import com.latte.blockchain.service.ITransactionService;
 import com.latte.blockchain.service.IWalletService;
@@ -8,7 +9,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
-import java.util.Map;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 
 /**
  * @author float311
@@ -23,25 +26,36 @@ public class WalletServiceImpl implements IWalletService {
     private ITransactionService transactionService;
 
     /**
+     * UTXO DAO
+     */
+    @Autowired
+    private UtxoDao utxoDao;
+
+    /**
      * 获取账户余额
      *
-     * @param userWallet 用户地址
-     * @return Float
+     * @param userWallet {@link Wallet}用户钱包
+     * @return 账户余额
      */
     @Override
     public float getBalance(Wallet userWallet) {
         float total = 0;
         // 从全局的UTXO中收集该用户的UTXO并进行结算
-        for (Map.Entry<String, TransactionOutput> item : latteChain.getUTXOs().entrySet()) {
-            TransactionOutput UTXO = item.getValue();
-            if (UTXO.isBelongTo(userWallet.getPublicKey())) {
-                userWallet.getUTXOs().put(UTXO.getId(), UTXO);
-                total += UTXO.getValue();
+        for (TransactionOutput record : utxoDao.findAll()) {
+            if (record.getRecipientString().equals(userWallet.getPublicKeyString())) {
+                userWallet.getUTXOs().put(record.getId(), record);
+                total += record.getValue();
             }
         }
         return total;
     }
 
+    /**
+     * 获取账户余额
+     *
+     * @param address 用户账户地址
+     * @return 账户余额
+     */
     @Override
     public float getBalance(String address) {
         address = address.replace(" ", "+");
@@ -52,44 +66,46 @@ public class WalletServiceImpl implements IWalletService {
     /**
      * 向recipient发起一笔值为value的交易
      *
-     * @param sender    {@link Wallet} 发送方
-     * @param recipient {@link Wallet} 接收方
+     * @param sender    发送方
+     * @param recipient 接收方
      * @param value     交易值
      * @return {@link Transaction} 交易
      */
     @Override
-    public Transaction sendFunds(Wallet sender, Wallet recipient, float value) {
-        if (this.getBalance(sender) < value) {
+    public Transaction sendFunds(String sender, String recipient, float value) {
+        Wallet senderWallet = latteChain.getUsers().get(sender);
+        Wallet recipientWallet = latteChain.getUsers().get(recipient);
+        if (this.getBalance(senderWallet) < value) {
             // 发起方余额不足，取消交易
-            System.out.println("# 余额不足. 交易取消");
             return null;
         }
 
         // 开始构造交易输入
-        ArrayList<TransactionInput> inputs = new ArrayList<>();
+        Set<String> inputs = new HashSet<>();
         float total = 0;
-        TransactionOutput utxo;
 
-        // 收集交易发起者的所有UTXO
-        for (Map.Entry<String, TransactionOutput> item : sender.getUTXOs().entrySet()) {
-            utxo = item.getValue();
-            total += utxo.getValue();
-            inputs.add(new TransactionInput(utxo.getId()));
+        // 收集交易发起者的UTXO
+        for (TransactionOutput item : senderWallet.getUTXOs().values()) {
+            total += item.getValue();
+            inputs.add(item.getId());
             // 已经满足支出需求
             if (total >= value) {
                 break;
             }
         }
         // 构造新交易
-        Transaction newTransaction = new Transaction(sender.getPublicKey(), recipient.getPublicKey(), value, inputs);
+        Transaction newTransaction = new Transaction(senderWallet.getPublicKey(),
+                recipientWallet.getPublicKey(), value, inputs);
+        newTransaction.setSenderString(sender);
+        newTransaction.setRecipientString(recipient);
         // 计算交易ID
         newTransaction.setId(transactionService.calculateTransactionHash(newTransaction));
-        transactionService.generateSignature(sender.getPrivateKey(), newTransaction);
+        transactionService.generateSignature(senderWallet.getPrivateKey(), newTransaction);
 
 
-        // 扣除发起者的花费的UTXO(从全局和个人钱包里)
-        for (TransactionInput input : inputs) {
-            sender.getUTXOs().remove(input.getTransactionOutputId());
+        // 扣除发起者的花费的UTXO(从个人钱包里) TODO: 需要从个人钱包扣除吗？还是直接从全局扣除？需要个人钱包这个概念吗？
+        for (String input : inputs) {
+            senderWallet.getUTXOs().remove(input);
         }
         return newTransaction;
     }

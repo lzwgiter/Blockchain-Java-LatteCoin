@@ -22,17 +22,17 @@ public interface IWalletService {
      * 获取账余额
      *
      * @param address 用户钱包地址
-     * @return float
+     * @return 钱包余额
      */
     float getBalance(String address);
 
     /**
      * 向recipient发起一笔值为value的交易
      *
-     * @param sender    {@link Wallet} 发送方
-     * @param recipient {@link Wallet} 接收方
+     * @param sender    发送方
+     * @param recipient 接收方
      * @param value     交易值
      * @return {@link Transaction} 交易
      */
-    Transaction sendFunds(Wallet sender, Wallet recipient, float value);
+    Transaction sendFunds(String sender, String recipient, float value);
 }

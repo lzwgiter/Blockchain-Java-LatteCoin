@@ -1,17 +1,19 @@
 package com.latte.blockchain.impl;
 
+import com.latte.blockchain.dao.TransactionDao;
+import com.latte.blockchain.dao.UtxoDao;
 import com.latte.blockchain.entity.*;
-import com.latte.blockchain.service.ITransactionPoolService;
 import com.latte.blockchain.service.ITransactionService;
 import com.latte.blockchain.service.IWalletService;
 import com.latte.blockchain.utils.CryptoUtil;
 
 import com.latte.blockchain.utils.JsonUtil;
+import com.latte.blockchain.utils.Lock;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.security.PrivateKey;
-import java.util.LinkedHashMap;
+import java.security.PublicKey;
 
 /**
  * @author float311
@@ -22,13 +24,25 @@ public class TransactionServiceImpl implements ITransactionService {
 
     private final LatteChain latteChain = LatteChain.getInstance();
 
-    private final LinkedHashMap<String, Transaction> pool = TransactionPool.getTransactionPool().getPool();
-
     @Autowired
     private IWalletService walletService;
 
+    /**
+     * 交易DAO对象
+     */
     @Autowired
-    private ITransactionPoolService transactionPoolService;
+    private TransactionDao transactionDao;
+
+    /**
+     * UTXO DAO对象
+     */
+    @Autowired
+    private UtxoDao utxoDao;
+
+    /**
+     * 锁对象
+     */
+    final Lock lock = Lock.getLock();
 
     /**
      * 发起一笔交易
@@ -43,11 +57,13 @@ public class TransactionServiceImpl implements ITransactionService {
         // 处理网络原因导致的字符问题
         sender = sender.replace(" ", "+");
         recipient = recipient.replace(" ", "+");
-        Transaction newTransaction = walletService.sendFunds(latteChain.getUsers().get(sender),
-                latteChain.getUsers().get(recipient), value);
+        Transaction newTransaction = walletService.sendFunds(sender, recipient, value);
         // 若交易建立成功，则将交易放入交易池
         if (newTransaction != null) {
-            transactionPoolService.addTransaction(newTransaction);
+            transactionDao.save(newTransaction);
+            synchronized (lock) {
+                lock.notifyAll();
+            }
             return JsonUtil.toJson(newTransaction);
         } else {
             return "账户[" + sender + "]余额不足，交易失败！";
@@ -68,17 +84,15 @@ public class TransactionServiceImpl implements ITransactionService {
     @Override
     public boolean processTransaction(Transaction transaction) {
         // 首先检查一个交易的合法性
-        // 验签
-        if (!isValidSignature(transaction)) {
-            System.out.println("# 交易签名验证失败");
-            return false;
-        }
+        // 验签 TODO： 交易验签的操作会耗费时间，导致线程阻塞
+//        if (!isValidSignature(transaction)) {
+//            System.out.println("# 交易签名验证失败");
+//            return false;
+//        }
 
-        // 从全局UTXO中收集当前交易所需的UTXO
-        for (TransactionInput input : transaction.getInputs()) {
-            if (latteChain.getUTXOs().containsKey(input.getTransactionOutputId())) {
-                input.setUTXO(latteChain.getUTXOs().get(input.getTransactionOutputId()));
-            } else {
+        // 检查所需UTXO是否已经被消耗
+        for (String input : transaction.getInputs()) {
+            if (!utxoDao.existsById(input)) {
                 // 当前交易已经被消耗，挖矿失败，退出
                 return false;
             }
@@ -87,24 +101,29 @@ public class TransactionServiceImpl implements ITransactionService {
         // 检查交易输入是否符合最低交易金额
         float inputsValue = getInputsValue(transaction);
         float minimum = latteChain.getMinimumTransactionValue();
-        if (inputsValue - transaction.getValue() < minimum) {
+        if (transaction.getValue() < minimum) {
             System.out.println("交易金额过小");
             return false;
         }
 
-        // 扣除交易方的UTXO
-        for (TransactionInput input : transaction.getInputs()) {
-            latteChain.getUTXOs().remove(input.getTransactionOutputId());
+        // 从全局删除交易方的UTXO
+        for (String input : transaction.getInputs()) {
+            utxoDao.deleteById(input);
         }
 
         // 计算剩余价值
         float leftOver = inputsValue - transaction.getValue();
 
+        PublicKey senderAddress = latteChain.getUsers().get(transaction.getSenderString()).getPublicKey();
+        PublicKey recipientAddress = latteChain.getUsers().get(transaction.getRecipientString()).getPublicKey();
+
+
+        // 添加交易输出
         // 将金额发送至接收方
-        transaction.getOutputs().add(new TransactionOutput(transaction.getRecipient(), transaction.getValue()));
+        transaction.getOutputs().add(new TransactionOutput(recipientAddress, transaction.getValue()));
 
         // 将剩余金额返回至发送方
-        transaction.getOutputs().add(new TransactionOutput(transaction.getSender(), leftOver));
+        transaction.getOutputs().add(new TransactionOutput(senderAddress, leftOver));
         return true;
     }
 
@@ -117,10 +136,10 @@ public class TransactionServiceImpl implements ITransactionService {
     @Override
     public float getInputsValue(Transaction transaction) {
         float total = 0;
-        for (TransactionInput input : transaction.getInputs()) {
-            if (input.getUTXO() != null) {
-                total += input.getUTXO().getValue();
-            }
+        TransactionOutput output;
+        for (String input : transaction.getInputs()) {
+            output = utxoDao.getTransactionOutputById(input);
+            total += output.getValue();
         }
         return total;
     }
@@ -149,14 +168,9 @@ public class TransactionServiceImpl implements ITransactionService {
     @Override
     public boolean isValidTransaction(Transaction transaction) {
         // 检查当前交易的签名
+        transaction.setSender(latteChain.getUsers().get(transaction.getSenderString()).getPublicKey());
         if (!isValidSignature(transaction)) {
             System.out.println("# Signature on Transaction(" + transaction.getId() + ") is Invalid");
-            return false;
-        }
-
-        // 检查输入输出的一致性
-        if (getInputsValue(transaction) != getOutputsValue(transaction)) {
-            System.out.println("# Inputs are note equal to outputs on Transaction(" + transaction.getId() + ")");
             return false;
         }
         return true;

@@ -28,7 +28,7 @@ public class Wallet {
      * 用户名
      */
     @Getter
-    private String name;
+    private final String name;
 
     /**
      * 用户私钥信息
@@ -41,8 +41,12 @@ public class Wallet {
      * 用户公钥信息
      */
     @Getter
-    @JsonSerialize(using = JsonUtil.class)
+    @JsonIgnore
     private final PublicKey publicKey;
+
+    @Getter
+    @JsonIgnore
+    private final String publicKeyString;
 
     /**
      * 用户挖矿线程
@@ -65,6 +69,7 @@ public class Wallet {
 
             privateKey = keyPair.getPrivate();
             publicKey = keyPair.getPublic();
+            publicKeyString = CryptoUtil.getStringFromKey(publicKey);
 
             String publicKeyString = CryptoUtil.getStringFromKey(publicKey);
             name = publicKeyString.substring(94);

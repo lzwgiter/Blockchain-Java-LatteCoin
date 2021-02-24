@@ -16,7 +16,7 @@ public class LatteChainEnum {
     /**
      * 难度值
      */
-    public static final Integer DIFFICULTY = 4;
+    public static final Integer DIFFICULTY = 3;
 
     /**
      * 难度字符串

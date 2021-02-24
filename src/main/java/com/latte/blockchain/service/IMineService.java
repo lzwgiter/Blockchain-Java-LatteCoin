@@ -60,11 +60,10 @@ public interface IMineService extends Runnable{
     /**
      * 检查是否是有效的区块
      *
-     * @param preBlock 前一区块
      * @param block    当前区块
      * @return 有效则返回true
      */
-    boolean isValidBlock(Block preBlock, Block block);
+    boolean isValidBlock(Block block);
 
     /**
      * 计算区块哈希值

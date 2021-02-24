@@ -1,11 +1,11 @@
 package com.latte.blockchain.entity;
 
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.latte.blockchain.utils.CryptoUtil;
-import com.latte.blockchain.utils.JsonUtil;
 
 import lombok.Data;
 
+import javax.persistence.*;
 import java.security.PublicKey;
 
 /**
@@ -13,18 +13,30 @@ import java.security.PublicKey;
  * @since 2021/1/27
  */
 @Data
+@Entity
+@Table(name = "global_utxo", schema = "lattechain")
 public class TransactionOutput {
 
     /**
      * id
      */
+    @Id
+    @Column(name = "id")
     private String id;
+
+    @ManyToOne(fetch = FetchType.EAGER)
+    private Transaction refTransaction;
 
     /**
      * 交易接受方
      */
-    @JsonSerialize(using = JsonUtil.class)
+    @Transient
+    @JsonIgnore
     private PublicKey recipient;
+
+    @Column(name = "recipient")
+    @JsonIgnore
+    private String recipientString;
 
     /**
      * 交易金额
@@ -36,6 +48,8 @@ public class TransactionOutput {
      */
     private long timeStamp;
 
+    protected TransactionOutput() {}
+
     /**
      * 新建一个交易输出，并自动计算其交易ID
      *
@@ -44,18 +58,9 @@ public class TransactionOutput {
      */
     public TransactionOutput(PublicKey recipient, float value) {
         this.recipient = recipient;
+        this.recipientString = CryptoUtil.getStringFromKey(recipient);
         this.value = value;
         this.timeStamp = System.currentTimeMillis();
         this.id = CryptoUtil.applySha256(CryptoUtil.getStringFromKey(recipient) + value + timeStamp);
-    }
-
-    /**
-     * 检查财产是否属于该用户
-     *
-     * @param publicKey {@link PublicKey} 用户地址
-     * @return boolean
-     */
-    public boolean isBelongTo(PublicKey publicKey) {
-        return publicKey == recipient;
     }
 }

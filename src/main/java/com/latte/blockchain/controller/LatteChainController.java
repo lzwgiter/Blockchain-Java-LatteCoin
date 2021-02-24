@@ -65,14 +65,4 @@ public class LatteChainController {
     public String getUserBalance(@RequestParam(name = "address") String address) {
         return "余额：" + walletService.getBalance(address) + "LC";
     }
-
-    /**
-     * 查看当前链的信息
-     *
-     * @return String
-     */
-    @GetMapping(path = "/checkChain")
-    public String getLatteChain() {
-        return chainService.queryChain();
-    }
 }

@@ -20,27 +20,14 @@ public class LatteChain {
     private static LatteChain LATTE_COIN = new LatteChain();
 
     /**
-     * 区块链
-     */
-    private ArrayList<Block> blockchain = new ArrayList<>();
-
-    /**
      * 区块链中的用户信息
      */
-    @JsonIgnore
     private HashMap<String, Wallet> users = new HashMap<>();
 
     /**
      * 最小交易值
      */
-    @JsonIgnore
     private final float minimumTransactionValue = 0.1f;
-
-    /**
-     * UTXOS
-     */
-    @JsonIgnore
-    private HashMap<String, TransactionOutput> UTXOs = new HashMap<>();
 
     private LatteChain() {}
 
@@ -50,9 +37,5 @@ public class LatteChain {
 
     public float getMinimumTransactionValue() {
         return minimumTransactionValue;
-    }
-
-    public ArrayList<Block> getBlockchain() {
-        return blockchain;
     }
 }
