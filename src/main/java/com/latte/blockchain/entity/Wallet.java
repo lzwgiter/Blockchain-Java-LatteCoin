@@ -2,7 +2,6 @@ package com.latte.blockchain.entity;
 
 import com.latte.blockchain.impl.MineServiceImpl;
 import com.latte.blockchain.utils.CryptoUtil;
-import com.latte.blockchain.utils.JsonUtil;
 
 import java.security.PublicKey;
 import java.security.PrivateKey;

@@ -3,6 +3,8 @@ package com.latte.blockchain.service;
 import com.latte.blockchain.entity.Block;
 import com.latte.blockchain.entity.Transaction;
 
+import java.util.List;
+
 /**
  * @author float311
  * @since 2021/2/28
@@ -36,10 +38,10 @@ public interface IMineService extends Runnable{
      * 执行交易并将交易信息添加到区块中
      *
      * @param block       {@link Block} 区块
-     * @param transaction {@link Transaction}
+     * @param transactions {@link Transaction}
      * @return boolean 是否添加成功
      */
-    boolean addTransaction(Block block, Transaction transaction);
+    boolean addTransaction(Block block, List<Transaction> transactions);
 
     /**
      * 发放奖励给旷工

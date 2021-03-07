@@ -29,14 +29,6 @@ public interface ITransactionService {
     float getInputsValue(Transaction transaction);
 
     /**
-     * 获取交易输出的总值
-     *
-     * @param transaction {@link Transaction} 交易
-     * @return 输出总值
-     */
-    float getOutputsValue(Transaction transaction);
-
-    /**
      * 为一个交易生成签名
      *
      * @param privateKey  {@link PrivateKey} 签名私钥
@@ -45,7 +37,7 @@ public interface ITransactionService {
     void generateSignature(PrivateKey privateKey, Transaction transaction);
 
     /**
-     * 执行交易(将交易的输出加到全局账本中)
+     * 计算交易的输出
      *
      * @param transaction {@link Transaction} 交易
      * @return 交易成功则返回true

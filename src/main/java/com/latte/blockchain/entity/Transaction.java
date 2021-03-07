@@ -70,7 +70,7 @@ public class Transaction {
      * 交易输出
      */
     @OneToMany(cascade = {CascadeType.REMOVE},
-            mappedBy = "refTransaction",
+            mappedBy = "refTransaction" ,
             fetch = FetchType.EAGER)
     private List<TransactionOutput> outputs;
 

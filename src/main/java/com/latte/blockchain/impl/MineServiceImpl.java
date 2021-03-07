@@ -16,9 +16,9 @@ import com.latte.blockchain.utils.CryptoUtil;
 import java.security.PublicKey;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 
-import com.latte.blockchain.utils.Lock;
+import com.latte.blockchain.utils.LockUtil;
 import org.springframework.stereotype.Service;
 
 /**
@@ -57,10 +57,6 @@ public class MineServiceImpl implements IMineService {
      */
     private UtxoDao utxoDao;
 
-    /**
-     * 锁
-     */
-    private final Lock lock = Lock.getLock();
 
     /**
      * 挖矿函数，将构造新的区块并尝试计算其哈希值
@@ -72,37 +68,31 @@ public class MineServiceImpl implements IMineService {
         blockDao = BeanContext.getApplicationContext().getBean(BlockDao.class);
         transactionDao = BeanContext.getApplicationContext().getBean(TransactionDao.class);
         utxoDao = BeanContext.getApplicationContext().getBean(UtxoDao.class);
+        ReentrantReadWriteLock lock = LockUtil.getLockUtil().getReadWriteLock();
 
         boolean flag = false;
         while (true) {
-            synchronized (lock) {
-                if (transactionDao.count() == 0) {
-                    try {
-                        System.out.println(Thread.currentThread().getName() + " sleep");
-                        lock.wait();
-                    } catch (InterruptedException e) {
-                        System.out.println(Thread.currentThread().getName() + " wakeup");
-                    }
+            try {
+                lock.readLock().lock();
+                // 并行读取当前链的高度信息、前一区块的哈希值信息、当前交易池中的交易信息
+                long currentHeight = blockDao.getHeight();
+                String preHash = blockDao.getBlockById(currentHeight - 1).getHash();
+                List<Transaction> transactions = transactionDao.getTransactions();
+                lock.readLock().unlock();
+                if (transactions.size() == 0) {
+                    Thread.sleep(2000);
                 } else {
-                    // 抓取交易池中的交易
-                    List<Transaction> transactions = transactionDao.getTransactions();
-                    lock.notifyAll();
-
                     // 构造区块
-                    long currentHeight = blockDao.count();
-                    String preHash = blockDao.getBlockById(currentHeight - 1).getHash();
                     Block newBlock = createNewBlock(preHash, Thread.currentThread().getName());
                     newBlock.setId(currentHeight);
 
                     // 将所有从交易池中获取的交易信息都添加到当前新构造的区块中
-                    for (Transaction transaction : transactions) {
-                        if (!addTransaction(newBlock, transaction)) {
-                            // 交易信息无效(签名信息错误、不满足最低金额)
-                            flag = true;
-                            break;
-                        }
+                    if (!addTransaction(newBlock, transactions)) {
+                        // 交易信息无效(签名信息错误、不满足最低金额、交易已被计算)
+                        flag = true;
                     }
                     if (flag) {
+                        // 挖矿失败，重新获取交易并创建、挖掘区块
                         continue;
                     }
 
@@ -111,15 +101,24 @@ public class MineServiceImpl implements IMineService {
                     // 提交新的区块并获取奖励
                     if (this.addBlock(newBlock)) {
                         // 将当前交易记在系统全局UTXO中并从池中删除已经消耗的交易
-                        for (Transaction transaction : transactions) {
-                            addToGlobal(transaction);
-                            transactionDao.deleteById(transaction.getId());
+                        lock.writeLock().lock();
+                        try {
+                            for (Transaction transaction : transactions) {
+                                // 将交易输出添加到全局
+                                addToGlobal(transaction);
+                                transactionDao.deleteById(transaction.getId());
+                            }
+                        } finally {
+                            lock.writeLock().unlock();
                         }
                     }
                 }
+            } catch (InterruptedException e) {
+                e.printStackTrace();
             }
         }
     }
+
 
     /**
      * 初始化区块链系统
@@ -145,19 +144,16 @@ public class MineServiceImpl implements IMineService {
         // 将创世块添加到区块链上
         this.addBlock(genesisBlock);
         // 开启所有用户的挖矿线程
-        for (Map.Entry<String, Wallet> entry : latteChain.getUsers().entrySet()) {
-            entry.getValue().getWorkerThread().start();
+        for (Wallet user : latteChain.getUsers().values()) {
+            user.getWorkerThread().start();
         }
         return true;
     }
 
     public void addToGlobal(Transaction transaction) {
-        // 将当前交易记在系统全局UTXO中
         for (TransactionOutput output : transaction.getOutputs()) {
-            if (!utxoDao.existsById(output.getId())) {
-                utxoDao.save(output);
-                System.out.println("交易输出" + output.getId() + "提交成功！");
-            }
+            utxoDao.save(output);
+            System.out.println("交易输出" + output.getId() + "提交成功！");
         }
     }
 
@@ -185,20 +181,30 @@ public class MineServiceImpl implements IMineService {
     @Override
     public boolean addBlock(Block blockToAdd) {
         blockDao = BeanContext.getApplicationContext().getBean(BlockDao.class);
+        ReentrantReadWriteLock lock = LockUtil.getLockUtil().getReadWriteLock();
         if (blockToAdd.getPreviousHash().equals(LatteChainEnum.ZERO_HASH)) {
             // 当前待添加块为创世块
             blockToAdd.setId(0);
             // 添加到数据库中
-            blockDao.save(blockToAdd);
-            //this.latteChain.getBlockchain().add(blockToAdd)
-            System.out.println("[Genesis Block pushed √] : " + blockToAdd.getHash());
+            lock.writeLock().lock();
+            try {
+                blockDao.save(blockToAdd);
+                System.out.println("[Genesis Block pushed √] : " + blockToAdd.getHash());
+            } finally {
+                lock.writeLock().unlock();
+            }
             return true;
         } else {
             if (isValidBlock(blockToAdd)) {
-                blockDao.save(blockToAdd);
-                System.out.println("[" + Thread.currentThread().getName() + " pushed √] : " + blockToAdd.getHash());
-                // 奖励矿工
-                rewardMiner(blockToAdd.getMsg(), blockToAdd);
+                lock.writeLock().lock();
+                try {
+                    blockDao.save(blockToAdd);
+                    System.out.println("[" + Thread.currentThread().getName() + " pushed √] : " + blockToAdd.getHash());
+                    // 奖励矿工
+                    rewardMiner(blockToAdd.getMsg(), blockToAdd);
+                } finally {
+                    lock.writeLock().unlock();
+                }
                 return true;
             } else {
                 // 区块信息不正确，添加失败
@@ -215,6 +221,7 @@ public class MineServiceImpl implements IMineService {
      */
     @Override
     public boolean isValidBlock(Block block) {
+        ReentrantReadWriteLock lock = LockUtil.getLockUtil().getReadWriteLock();
         // 检查哈希值是否有效
         if (!block.getHash().substring(0, LatteChainEnum.DIFFICULTY).equals(LatteChainEnum.TARGET_HASH)) {
             System.out.println("# 区块哈希值不符合条件");
@@ -228,10 +235,15 @@ public class MineServiceImpl implements IMineService {
         }
 
         // 检查哈希值的链接性，即比较当前区块与前一区块的哈希值是否相同
-        Block preBlock = blockDao.getBlockById(block.getId() - 1);
-        if (!preBlock.getHash().equals(block.getPreviousHash())) {
-            // 当前区块与上一区块父哈希不同
-            return false;
+        lock.readLock().lock();
+        try {
+            Block preBlock = blockDao.getBlockById(block.getId() - 1);
+            if (!preBlock.getHash().equals(block.getPreviousHash())) {
+                // 当前区块与上一区块父哈希不同
+                return false;
+            }
+        } finally {
+            lock.readLock().unlock();
         }
 
         // 检查区块中所包含的交易是否都是合法的
@@ -279,38 +291,34 @@ public class MineServiceImpl implements IMineService {
     /**
      * 执行交易并添加到区块中
      *
-     * @param block       区块
-     * @param transaction 交易信息
+     * @param block        区块
+     * @param transactions 交易信息
      */
     @Override
-    public boolean addTransaction(Block block, Transaction transaction) {
-        // 交易为空，不合法
-        if (transaction == null) {
-            return false;
-        }
+    public boolean addTransaction(Block block, List<Transaction> transactions) {
+        for (Transaction transaction : transactions) {
+            if (!block.getPreviousHash().equals(LatteChainEnum.ZERO_HASH)) {
+                // 非初始块
+                ReentrantReadWriteLock lock = LockUtil.getLockUtil().getReadWriteLock();
+                lock.readLock().lock();
+                try {
+                    if (!transactionDao.existsById(transaction.getId())) {
+                        // 当前交易已被消耗
+                        return false;
+                    }
+                } finally {
+                    lock.readLock().unlock();
+                }
 
-        // 当前区块所能包含交易数量已达上限
-        if (block.getTransactions().size() == LatteChainEnum.MAX_TRANSACTION_AMOUNT) {
-            return false;
-        }
-
-        if (!block.getPreviousHash().equals(LatteChainEnum.ZERO_HASH)) {
-            // 非初始块
-            if (!transactionDao.existsById(transaction.getId())) {
-                // 当前交易已被消耗
-                return false;
-            }
-            if (transaction.getSenderString() != null) {
-                // 非奖励交易则检查交易合法性(输入输出是否匹配、签名是否正确)并计算交易的信息(交易id、消耗，找零的UTXO)
                 if (!transactionService.processTransaction(transaction)) {
                     // 交易不合法或当前交易已经被消耗
                     return false;
                 }
             }
-        }
 
-        // 将交易添加至区块中
-        block.getTransactions().add(transaction);
+            // 将交易添加至区块中
+            block.getTransactions().add(transaction);
+        }
         return true;
     }
 

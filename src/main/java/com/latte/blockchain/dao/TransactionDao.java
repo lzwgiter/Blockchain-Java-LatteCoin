@@ -2,7 +2,6 @@ package com.latte.blockchain.dao;
 
 import com.latte.blockchain.entity.Transaction;
 import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 
 import java.util.List;
@@ -20,4 +19,11 @@ public interface TransactionDao extends JpaRepository<Transaction, String> {
      */
     @Query(value = "select * from transactions order by time_stamp limit 0, 5", nativeQuery = true)
     List<Transaction> getTransactions();
+
+    /**
+     * 获取当前交易池中的交易数量
+     * @return 交易池中的可用交易的大小
+     */
+    @Query(value = "select count(*) from transactions", nativeQuery = true)
+    long getCount();
 }
