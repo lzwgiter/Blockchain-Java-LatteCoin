@@ -5,6 +5,7 @@ import com.latte.blockchain.entity.*;
 import com.latte.blockchain.service.ITransactionService;
 import com.latte.blockchain.service.IWalletService;
 
+import com.latte.blockchain.utils.LatteChain;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -39,7 +40,7 @@ public class WalletServiceImpl implements IWalletService {
     public float getBalance(Wallet userWallet) {
         float total = 0;
         // 从全局的UTXO中收集该用户的UTXO并进行结算
-        for (TransactionOutput record : utxoDao.findAll()) {
+        for (Utxo record : utxoDao.findAll()) {
             if (record.getRecipientString().equals(userWallet.getPublicKeyString())) {
                 userWallet.getUTXOs().put(record.getId(), record);
                 total += record.getValue();
@@ -73,6 +74,11 @@ public class WalletServiceImpl implements IWalletService {
     public Transaction sendFunds(String sender, String recipient, float value) {
         Wallet senderWallet = latteChain.getUsers().get(sender);
         Wallet recipientWallet = latteChain.getUsers().get(recipient);
+        if (senderWallet == null || recipientWallet == null) {
+            // 请求用户不存在
+            return null;
+        }
+
         if (this.getBalance(senderWallet) < value) {
             // 发起方余额不足，取消交易
             return null;
@@ -83,7 +89,7 @@ public class WalletServiceImpl implements IWalletService {
         float total = 0;
 
         // 收集交易发起者的UTXO
-        for (TransactionOutput item : senderWallet.getUTXOs().values()) {
+        for (Utxo item : senderWallet.getUTXOs().values()) {
             total += item.getValue();
             inputs.add(item.getId());
             // 已经满足支出需求
@@ -97,6 +103,7 @@ public class WalletServiceImpl implements IWalletService {
         newTransaction.setSenderString(sender);
         newTransaction.setRecipientString(recipient);
         // 计算交易ID
+        newTransaction.setData();
         newTransaction.setId(transactionService.calculateTransactionHash(newTransaction));
         transactionService.generateSignature(senderWallet.getPrivateKey(), newTransaction);
 

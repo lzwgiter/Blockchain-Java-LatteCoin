@@ -46,8 +46,7 @@ public class Block {
     /**
      * 交易信息 {@link Transaction}，最多包含MAX_TRANSACTION_AMOUNT个交易信息
      */
-    @OneToMany(fetch = FetchType.EAGER,
-            mappedBy = "refBlock")
+    @OneToMany(fetch = FetchType.EAGER)
     private List<Transaction> transactions;
 
     /**

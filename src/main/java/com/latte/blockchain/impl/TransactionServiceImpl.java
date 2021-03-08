@@ -1,6 +1,7 @@
 package com.latte.blockchain.impl;
 
 import com.latte.blockchain.dao.TransactionDao;
+import com.latte.blockchain.dao.TransactionPoolDao;
 import com.latte.blockchain.dao.UtxoDao;
 import com.latte.blockchain.entity.*;
 import com.latte.blockchain.service.ITransactionService;
@@ -8,12 +9,16 @@ import com.latte.blockchain.service.IWalletService;
 import com.latte.blockchain.utils.CryptoUtil;
 
 import com.latte.blockchain.utils.JsonUtil;
+import com.latte.blockchain.utils.LatteChain;
 import com.latte.blockchain.utils.LockUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.nio.charset.StandardCharsets;
 import java.security.PrivateKey;
 import java.security.PublicKey;
+import java.util.concurrent.locks.Condition;
+import java.util.concurrent.locks.ReentrantLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 /**
@@ -35,6 +40,12 @@ public class TransactionServiceImpl implements ITransactionService {
     private TransactionDao transactionDao;
 
     /**
+     * 交易池DAO对象
+     */
+    @Autowired
+    private TransactionPoolDao transactionPoolDao;
+
+    /**
      * UTXO DAO对象
      */
     @Autowired
@@ -54,26 +65,23 @@ public class TransactionServiceImpl implements ITransactionService {
         sender = sender.replace(" ", "+");
         recipient = recipient.replace(" ", "+");
         Transaction newTransaction = walletService.sendFunds(sender, recipient, value);
-        ReentrantReadWriteLock lock = LockUtil.getLockUtil().getReadWriteLock();
+        ReentrantLock requestLock = LockUtil.getLockUtil().getRequestLock();
+        Condition condition = LockUtil.getLockUtil().getCondition();
         // 若交易建立成功，则将交易放入交易池
         if (newTransaction != null) {
+            requestLock.lock();
             try {
-                lock.writeLock().lock();
-                System.out.println(lock.writeLock() + "已获取");
                 transactionDao.save(newTransaction);
+                transactionPoolDao.save(
+                        new TransactionsPoolEntity(newTransaction.getId(), newTransaction.getTimeStamp()));
+                condition.signalAll();
             } finally {
-                lock.writeLock().unlock();
-                System.out.println(lock.writeLock() + "已释放");
+                requestLock.unlock();
             }
             return JsonUtil.toJson(newTransaction);
         } else {
             return "账户[" + sender + "]余额不足，交易失败！";
         }
-    }
-
-    @Override
-    public void generateSignature(PrivateKey privateKey, Transaction transaction) {
-        transaction.setSignature(CryptoUtil.applySignature(privateKey, transaction.getData()));
     }
 
     /**
@@ -98,7 +106,7 @@ public class TransactionServiceImpl implements ITransactionService {
         }
 
         // 从全局删除交易方的UTXO
-        for (String input : transaction.getInputs()) {
+        for (String input : transaction.getInputUtxos()) {
             utxoDao.deleteById(input);
         }
 
@@ -110,10 +118,10 @@ public class TransactionServiceImpl implements ITransactionService {
 
         // 添加交易输出
         // 将金额发送至接收方
-        transaction.getOutputs().add(new TransactionOutput(recipientAddress, transaction.getValue()));
+        transaction.getOutputUtxos().add(new Utxo(recipientAddress, transaction.getValue()));
 
         // 将剩余金额返回至发送方
-        transaction.getOutputs().add(new TransactionOutput(senderAddress, leftOver));
+        transaction.getOutputUtxos().add(new Utxo(senderAddress, leftOver));
         return true;
     }
 
@@ -126,11 +134,11 @@ public class TransactionServiceImpl implements ITransactionService {
     @Override
     public float getInputsValue(Transaction transaction) {
         float total = 0;
-        TransactionOutput output;
+        Utxo output;
         ReentrantReadWriteLock lock = LockUtil.getLockUtil().getReadWriteLock();
         lock.readLock().lock();
         try {
-            for (String input : transaction.getInputs()) {
+            for (String input : transaction.getInputUtxos()) {
                 output = utxoDao.getTransactionOutputById(input);
                 if (output == null) {
                     return 0;
@@ -145,20 +153,19 @@ public class TransactionServiceImpl implements ITransactionService {
     }
 
     /**
-     * 检查是否是有效的交易
+     * 获取targetUserName作为接受方的所有交易的交易链
      *
-     * @param transaction {@link Transaction} 交易信息
-     * @return 是则返回true
+     * @param targetUserName 待审计用户名称
+     * @return 交易链信息
      */
     @Override
-    public boolean isValidTransaction(Transaction transaction) {
-        // 检查当前交易的签名
-        transaction.setSender(latteChain.getUsers().get(transaction.getSenderString()).getPublicKey());
-        if (!isValidSignature(transaction)) {
-            System.out.println("# Signature on Transaction(" + transaction.getId() + ") is Invalid");
-            return false;
-        }
-        return true;
+    public String auditTransaction(String targetUserName) {
+        return null;
+    }
+
+    @Override
+    public void generateSignature(PrivateKey privateKey, Transaction transaction) {
+        transaction.setSignature(CryptoUtil.applySm2Signature(privateKey, transaction.getData()));
     }
 
     /**
@@ -169,14 +176,14 @@ public class TransactionServiceImpl implements ITransactionService {
      */
     @Override
     public boolean isValidSignature(Transaction transaction) {
-        return CryptoUtil.verifySignature(transaction.getSender(),
+        return CryptoUtil.verifySm2Signature(transaction.getSender(),
                 transaction.getData(),
                 transaction.getSignature());
     }
 
     @Override
     public String calculateTransactionHash(Transaction transaction) {
-        return CryptoUtil.applySha256(transaction.getData());
+        return CryptoUtil.applySm3Hash(transaction.getData());
     }
 
 }

@@ -2,13 +2,11 @@ package com.latte.blockchain.impl;
 
 import com.latte.blockchain.dao.BlockDao;
 import com.latte.blockchain.dao.TransactionDao;
+import com.latte.blockchain.dao.TransactionPoolDao;
 import com.latte.blockchain.dao.UtxoDao;
-import com.latte.blockchain.entity.Block;
-import com.latte.blockchain.entity.Wallet;
-import com.latte.blockchain.entity.LatteChain;
-import com.latte.blockchain.entity.BeanContext;
-import com.latte.blockchain.entity.Transaction;
-import com.latte.blockchain.entity.TransactionOutput;
+import com.latte.blockchain.entity.*;
+import com.latte.blockchain.utils.LatteChain;
+import com.latte.blockchain.utils.BeanContext;
 import com.latte.blockchain.enums.LatteChainEnum;
 import com.latte.blockchain.service.*;
 import com.latte.blockchain.utils.CryptoUtil;
@@ -16,6 +14,8 @@ import com.latte.blockchain.utils.CryptoUtil;
 import java.security.PublicKey;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.locks.Condition;
+import java.util.concurrent.locks.ReentrantLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 import com.latte.blockchain.utils.LockUtil;
@@ -53,6 +53,11 @@ public class MineServiceImpl implements IMineService {
     private TransactionDao transactionDao;
 
     /**
+     * 交易池DAO对象
+     */
+    private TransactionPoolDao transactionPoolDao;
+
+    /**
      * 全局UTXO DAO对象
      */
     private UtxoDao utxoDao;
@@ -67,8 +72,12 @@ public class MineServiceImpl implements IMineService {
         userService = BeanContext.getApplicationContext().getBean(UserServiceImpl.class);
         blockDao = BeanContext.getApplicationContext().getBean(BlockDao.class);
         transactionDao = BeanContext.getApplicationContext().getBean(TransactionDao.class);
+        transactionPoolDao = BeanContext.getApplicationContext().getBean(TransactionPoolDao.class);
         utxoDao = BeanContext.getApplicationContext().getBean(UtxoDao.class);
+
         ReentrantReadWriteLock lock = LockUtil.getLockUtil().getReadWriteLock();
+        ReentrantLock requestLock = LockUtil.getLockUtil().getRequestLock();
+        Condition condition = LockUtil.getLockUtil().getCondition();
 
         boolean flag = false;
         while (true) {
@@ -77,17 +86,29 @@ public class MineServiceImpl implements IMineService {
                 // 并行读取当前链的高度信息、前一区块的哈希值信息、当前交易池中的交易信息
                 long currentHeight = blockDao.getHeight();
                 String preHash = blockDao.getBlockById(currentHeight - 1).getHash();
-                List<Transaction> transactions = transactionDao.getTransactions();
-                lock.readLock().unlock();
-                if (transactions.size() == 0) {
-                    Thread.sleep(2000);
+                if (transactionPoolDao.getPoolSize() == 0) {
+                    System.out.println(Thread.currentThread().getName() + " Sleeping");
+                    lock.readLock().unlock();
+                    // 进入休眠状态
+                    requestLock.lock();
+                    try {
+                        condition.await();
+                    } finally {
+                        requestLock.unlock();
+                    }
                 } else {
+                    List<TransactionsPoolEntity> transactions = transactionPoolDao.getTransactions();
+                    List<Transaction> works = new ArrayList<>(LatteChainEnum.MAX_TRANSACTION_AMOUNT);
+                    for (TransactionsPoolEntity entity : transactions) {
+                        works.add(transactionDao.getTransactionById(entity.getTransactionIndex()));
+                    }
+                    lock.readLock().unlock();
                     // 构造区块
                     Block newBlock = createNewBlock(preHash, Thread.currentThread().getName());
                     newBlock.setId(currentHeight);
 
                     // 将所有从交易池中获取的交易信息都添加到当前新构造的区块中
-                    if (!addTransaction(newBlock, transactions)) {
+                    if (!addTransaction(newBlock, works)) {
                         // 交易信息无效(签名信息错误、不满足最低金额、交易已被计算)
                         flag = true;
                     }
@@ -99,18 +120,17 @@ public class MineServiceImpl implements IMineService {
                     // 计算新区块的哈希值
                     mineNewBlock(newBlock);
                     // 提交新的区块并获取奖励
-                    if (this.addBlock(newBlock)) {
-                        // 将当前交易记在系统全局UTXO中并从池中删除已经消耗的交易
-                        lock.writeLock().lock();
-                        try {
-                            for (Transaction transaction : transactions) {
-                                // 将交易输出添加到全局
-                                addToGlobal(transaction);
-                                transactionDao.deleteById(transaction.getId());
-                            }
-                        } finally {
-                            lock.writeLock().unlock();
+                    addBlock(newBlock);
+                    // 将当前交易记在系统全局UTXO中并从池中删除已经消耗的交易
+                    lock.writeLock().lock();
+                    try {
+                        for (Transaction transaction : works) {
+                            // 将交易输出添加到全局
+                            addToGlobal(transaction);
+                            transactionPoolDao.deleteById(transaction.getId());
                         }
+                    } finally {
+                        lock.writeLock().unlock();
                     }
                 }
             } catch (InterruptedException e) {
@@ -136,7 +156,7 @@ public class MineServiceImpl implements IMineService {
         String coinbaseAddress = userService.initUser();
         PublicKey coinbasePublicKey = userService.getUserPublicKey(coinbaseAddress);
         // 初始块奖励
-        TransactionOutput output = new TransactionOutput(coinbasePublicKey, LatteChainEnum.BLOCK_SUBSIDY);
+        Utxo output = new Utxo(coinbasePublicKey, LatteChainEnum.BLOCK_SUBSIDY);
         utxoDao.save(output);
         Block genesisBlock = this.createNewBlock("0",
                 "The Times 03/Jan/2009 Chancellor on brink of second bailout for banks");
@@ -151,9 +171,8 @@ public class MineServiceImpl implements IMineService {
     }
 
     public void addToGlobal(Transaction transaction) {
-        for (TransactionOutput output : transaction.getOutputs()) {
+        for (Utxo output : transaction.getOutputUtxos()) {
             utxoDao.save(output);
-            System.out.println("交易输出" + output.getId() + "提交成功！");
         }
     }
 
@@ -168,7 +187,7 @@ public class MineServiceImpl implements IMineService {
         float rewardValue = LatteChainEnum.BLOCK_SUBSIDY +
                 LatteChainEnum.TRANSACTION_SUBSIDY * block.getTransactions().size();
         PublicKey account = userService.getUserPublicKey(address);
-        TransactionOutput reward = new TransactionOutput(account, rewardValue);
+        Utxo reward = new Utxo(account, rewardValue);
         utxoDao.save(reward);
     }
 
@@ -176,10 +195,9 @@ public class MineServiceImpl implements IMineService {
      * 检查并添加新的区块到区块链中
      *
      * @param blockToAdd 待添加的区块
-     * @return boolean 添加成功则返回true
      */
     @Override
-    public boolean addBlock(Block blockToAdd) {
+    public void addBlock(Block blockToAdd) {
         blockDao = BeanContext.getApplicationContext().getBean(BlockDao.class);
         ReentrantReadWriteLock lock = LockUtil.getLockUtil().getReadWriteLock();
         if (blockToAdd.getPreviousHash().equals(LatteChainEnum.ZERO_HASH)) {
@@ -193,69 +211,17 @@ public class MineServiceImpl implements IMineService {
             } finally {
                 lock.writeLock().unlock();
             }
-            return true;
         } else {
-            if (isValidBlock(blockToAdd)) {
-                lock.writeLock().lock();
-                try {
-                    blockDao.save(blockToAdd);
-                    System.out.println("[" + Thread.currentThread().getName() + " pushed √] : " + blockToAdd.getHash());
-                    // 奖励矿工
-                    rewardMiner(blockToAdd.getMsg(), blockToAdd);
-                } finally {
-                    lock.writeLock().unlock();
-                }
-                return true;
-            } else {
-                // 区块信息不正确，添加失败
-                return false;
+            lock.writeLock().lock();
+            try {
+                blockDao.save(blockToAdd);
+                System.out.println("[" + Thread.currentThread().getName() + " pushed √] : " + blockToAdd.getHash());
+                // 奖励矿工
+                rewardMiner(blockToAdd.getMsg(), blockToAdd);
+            } finally {
+                lock.writeLock().unlock();
             }
         }
-    }
-
-    /**
-     * 检查是否是有效的区块
-     *
-     * @param block 当前区块
-     * @return 有效则返回true
-     */
-    @Override
-    public boolean isValidBlock(Block block) {
-        ReentrantReadWriteLock lock = LockUtil.getLockUtil().getReadWriteLock();
-        // 检查哈希值是否有效
-        if (!block.getHash().substring(0, LatteChainEnum.DIFFICULTY).equals(LatteChainEnum.TARGET_HASH)) {
-            System.out.println("# 区块哈希值不符合条件");
-            return false;
-        }
-
-        // 比较哈希值是否正确
-        if (!block.getHash().equals(this.calculateBlockHash(block))) {
-            // 当前区块哈希值不正确
-            return false;
-        }
-
-        // 检查哈希值的链接性，即比较当前区块与前一区块的哈希值是否相同
-        lock.readLock().lock();
-        try {
-            Block preBlock = blockDao.getBlockById(block.getId() - 1);
-            if (!preBlock.getHash().equals(block.getPreviousHash())) {
-                // 当前区块与上一区块父哈希不同
-                return false;
-            }
-        } finally {
-            lock.readLock().unlock();
-        }
-
-        // 检查区块中所包含的交易是否都是合法的
-        ArrayList<Transaction> transactionsList = (ArrayList<Transaction>) block.getTransactions();
-        for (Transaction transaction : transactionsList) {
-            if (!transactionService.isValidTransaction(transaction)) {
-                System.out.println("# 当前区块中交易[ " + transaction.getId() + "] 不合法");
-                return false;
-            }
-        }
-
-        return true;
     }
 
     /**
@@ -302,7 +268,7 @@ public class MineServiceImpl implements IMineService {
                 ReentrantReadWriteLock lock = LockUtil.getLockUtil().getReadWriteLock();
                 lock.readLock().lock();
                 try {
-                    if (!transactionDao.existsById(transaction.getId())) {
+                    if (!transactionPoolDao.existsById(transaction.getId())) {
                         // 当前交易已被消耗
                         return false;
                     }
@@ -330,7 +296,7 @@ public class MineServiceImpl implements IMineService {
      */
     @Override
     public String calculateBlockHash(Block block) {
-        return CryptoUtil.applySha256(
+        return CryptoUtil.applySm3Hash(
                 block.getId() +
                         block.getPreviousHash() +
                         block.getTimeStamp() +

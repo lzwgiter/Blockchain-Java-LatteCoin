@@ -1,6 +1,6 @@
 package com.latte.blockchain.impl;
 
-import com.latte.blockchain.entity.LatteChain;
+import com.latte.blockchain.utils.LatteChain;
 import com.latte.blockchain.entity.Wallet;
 import com.latte.blockchain.enums.LatteChainEnum;
 import com.latte.blockchain.service.IUserService;

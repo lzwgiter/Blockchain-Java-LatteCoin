@@ -12,6 +12,8 @@ import org.bouncycastle.jce.provider.BouncyCastleProvider;
 
 
 /**
+ * 链服务
+ *
  * @author float311
  * @since 2021/02/03
  */

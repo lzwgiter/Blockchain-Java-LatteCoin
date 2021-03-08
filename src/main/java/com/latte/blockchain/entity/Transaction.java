@@ -1,16 +1,13 @@
 package com.latte.blockchain.entity;
 
 import com.fasterxml.jackson.annotation.JsonAlias;
-import com.latte.blockchain.utils.CryptoUtil;
-import com.latte.blockchain.utils.JsonUtil;
 
+import java.io.Serializable;
 import java.security.PublicKey;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.HashSet;
 import java.util.Set;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import lombok.Data;
 import lombok.Getter;
 
@@ -33,28 +30,31 @@ public class Transaction {
     @Id
     private String id;
 
-    @ManyToOne(fetch = FetchType.EAGER)
-    private Block refBlock;
-
     /**
-     * 发送方的地址(公钥)
+     * 发送方的地址
      */
     @Transient
     @JsonIgnore
     private PublicKey sender;
 
     /**
-     * 接受方的地址(公钥)
+     * 接受方的地址
      */
     @Transient
     @JsonIgnore
     private PublicKey recipient;
 
+    /**
+     * 发起方字符串
+     */
     @Getter
     @Column(name = "Sender")
     @JsonAlias({"sender"})
     private String senderString;
 
+    /**
+     * 接受方字符串
+     */
     @Getter
     @JsonAlias({"recipient"})
     @Column(name = "recipient")
@@ -64,15 +64,15 @@ public class Transaction {
      * 交易输入
      */
     @ElementCollection(fetch = FetchType.EAGER)
-    private Set<String> inputs;
+    private Set<String> inputUtxos;
 
     /**
      * 交易输出
      */
     @OneToMany(cascade = {CascadeType.REMOVE},
-            mappedBy = "refTransaction" ,
+            mappedBy = "refTransaction",
             fetch = FetchType.EAGER)
-    private List<TransactionOutput> outputs;
+    private Set<Utxo> outputUtxos;
 
     /**
      * 交易金额
@@ -89,7 +89,6 @@ public class Transaction {
     /**
      * 时间戳
      */
-    @Column(name = "timeStamp")
     private long timeStamp;
 
     /**
@@ -97,6 +96,13 @@ public class Transaction {
      */
     @JsonIgnore
     private String data;
+
+    /**
+     * 从属区块
+     */
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "refBlock", referencedColumnName = "id")
+    private Block refBlock;
 
     protected Transaction() {
     }
@@ -113,9 +119,12 @@ public class Transaction {
         this.sender = sender;
         this.recipient = recipient;
         this.value = value;
-        this.inputs = inputs;
-        this.outputs = new ArrayList<>();
+        this.inputUtxos = inputs;
+        this.outputUtxos = new HashSet<>();
         this.timeStamp = System.currentTimeMillis();
+    }
+
+    public void setData() {
         this.data = this.getSenderString() + this.getRecipientString() + value + timeStamp;
     }
 }

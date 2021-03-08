@@ -21,6 +21,22 @@ public interface ITransactionService {
     String createTransaction(String sender, String recipient, float value);
 
     /**
+     * 计算交易的输出
+     *
+     * @param transaction {@link Transaction} 交易
+     * @return 交易成功则返回true
+     */
+    boolean processTransaction(Transaction transaction);
+
+    /**
+     * 获取targetUserName作为接受方的所有交易的交易链
+     *
+     * @param targetUserName 待审计用户名称
+     * @return 交易链信息
+     */
+    String auditTransaction(String targetUserName);
+
+    /**
      * 获取交易输入的总值
      *
      * @param transaction {@link Transaction} 交易
@@ -35,22 +51,6 @@ public interface ITransactionService {
      * @param transaction {@link Transaction} 交易
      */
     void generateSignature(PrivateKey privateKey, Transaction transaction);
-
-    /**
-     * 计算交易的输出
-     *
-     * @param transaction {@link Transaction} 交易
-     * @return 交易成功则返回true
-     */
-    boolean processTransaction(Transaction transaction);
-
-    /**
-     * 检查是否是有效的交易
-     *
-     * @param transaction {@link Transaction} 交易信息
-     * @return 是则返回true
-     */
-    boolean isValidTransaction(Transaction transaction);
 
     /**
      * 验证交易签名

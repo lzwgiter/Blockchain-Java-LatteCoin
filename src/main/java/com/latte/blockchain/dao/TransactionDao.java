@@ -14,16 +14,19 @@ import java.util.List;
  */
 public interface TransactionDao extends JpaRepository<Transaction, String> {
     /**
-     * 从表中获取4个最早的交易
-     * @return {@link Transaction} 交易列表
+     * 获取所有收款人为recipient的交易
+     * TODO
+     *
+     * @param recipient 收款人姓名
+     * @return List Transactions
      */
-    @Query(value = "select * from transactions order by time_stamp limit 0, 5", nativeQuery = true)
-    List<Transaction> getTransactions();
+    List<Transaction> getTransactionsByRecipientString(String recipient);
 
     /**
-     * 获取当前交易池中的交易数量
-     * @return 交易池中的可用交易的大小
+     * 获取指定id的交易类
+     *
+     * @param id 索引
+     * @return Transaction
      */
-    @Query(value = "select count(*) from transactions", nativeQuery = true)
-    long getCount();
+    Transaction getTransactionById(String id);
 }

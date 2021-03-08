@@ -1,4 +1,4 @@
-package com.latte.blockchain.entity;
+package com.latte.blockchain.utils;
 
 import org.springframework.beans.BeansException;
 import org.springframework.context.ApplicationContext;

@@ -1,9 +1,8 @@
-package com.latte.blockchain.entity;
+package com.latte.blockchain.utils;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.latte.blockchain.entity.Wallet;
 import lombok.Data;
 
-import java.util.ArrayList;
 import java.util.HashMap;
 
 /**
@@ -33,9 +32,5 @@ public class LatteChain {
 
     public static LatteChain getInstance() {
         return LATTE_COIN;
-    }
-
-    public float getMinimumTransactionValue() {
-        return minimumTransactionValue;
     }
 }

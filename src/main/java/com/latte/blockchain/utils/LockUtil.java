@@ -1,5 +1,6 @@
 package com.latte.blockchain.utils;
 
+import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
@@ -12,6 +13,10 @@ public class LockUtil {
 
     private final ReentrantReadWriteLock lock = new ReentrantReadWriteLock();
 
+    private final ReentrantLock requestLock = new ReentrantLock();
+
+    private final Condition condition = requestLock.newCondition();
+
 
     private LockUtil() {}
 
@@ -21,5 +26,13 @@ public class LockUtil {
 
     public ReentrantReadWriteLock getReadWriteLock() {
         return lock;
+    }
+
+    public ReentrantLock getRequestLock() {
+        return requestLock;
+    }
+
+    public Condition getCondition() {
+        return condition;
     }
 }

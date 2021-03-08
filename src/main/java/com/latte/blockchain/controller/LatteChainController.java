@@ -56,6 +56,17 @@ public class LatteChainController {
     }
 
     /**
+     * 对指定用户的所有交易进行审计
+     *
+     * @param targetUser 指定的用户
+     * @return 该用户的所有交易链信息
+     */
+    @PostMapping(path = "/auditAllTransaction")
+    public String audit(@RequestParam(name = "target") String targetUser) {
+        return "";
+    }
+
+    /**
      * 查询指定账户的余额
      *
      * @param address 查询对象的账户地址

@@ -55,17 +55,8 @@ public interface IMineService extends Runnable{
      * 检查并添加新的区块到区块链中
      *
      * @param blockToAdd 待添加的区块
-     * @return boolean 添加成功则返回true
      */
-    boolean addBlock(Block blockToAdd);
-
-    /**
-     * 检查是否是有效的区块
-     *
-     * @param block    当前区块
-     * @return 有效则返回true
-     */
-    boolean isValidBlock(Block block);
+    void addBlock(Block blockToAdd);
 
     /**
      * 计算区块哈希值

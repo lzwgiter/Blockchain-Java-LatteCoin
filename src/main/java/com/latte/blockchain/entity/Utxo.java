@@ -15,7 +15,7 @@ import java.security.PublicKey;
 @Data
 @Entity
 @Table(name = "global_utxo", schema = "lattechain")
-public class TransactionOutput {
+public class Utxo {
 
     /**
      * id
@@ -24,6 +24,10 @@ public class TransactionOutput {
     @Column(name = "id")
     private String id;
 
+    /**
+     * 从属交易
+     */
+    @JsonIgnore
     @ManyToOne(fetch = FetchType.EAGER)
     private Transaction refTransaction;
 
@@ -34,7 +38,7 @@ public class TransactionOutput {
     @JsonIgnore
     private PublicKey recipient;
 
-    @Column(name = "recipient")
+    @Column(name = "owner")
     @JsonIgnore
     private String recipientString;
 
@@ -48,7 +52,7 @@ public class TransactionOutput {
      */
     private long timeStamp;
 
-    protected TransactionOutput() {}
+    protected Utxo() {}
 
     /**
      * 新建一个交易输出，并自动计算其交易ID
@@ -56,11 +60,11 @@ public class TransactionOutput {
      * @param recipient {@link PublicKey} 接受方
      * @param value     交易金额
      */
-    public TransactionOutput(PublicKey recipient, float value) {
+    public Utxo(PublicKey recipient, float value) {
         this.recipient = recipient;
         this.recipientString = CryptoUtil.getStringFromKey(recipient);
         this.value = value;
         this.timeStamp = System.currentTimeMillis();
-        this.id = CryptoUtil.applySha256(CryptoUtil.getStringFromKey(recipient) + value + timeStamp);
+        this.id = CryptoUtil.applySm3Hash(CryptoUtil.getStringFromKey(recipient) + value + timeStamp);
     }
 }
