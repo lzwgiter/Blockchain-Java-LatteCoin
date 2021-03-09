@@ -11,11 +11,20 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 public class LockUtil {
     private static final LockUtil LOCK_UTIL = new LockUtil();
 
+    /**
+     * 线程读写锁
+     */
     private final ReentrantReadWriteLock lock = new ReentrantReadWriteLock();
 
-    private final ReentrantLock requestLock = new ReentrantLock();
+    /**
+     * 请求锁
+     */
+    private final ReentrantLock stateLock = new ReentrantLock();
 
-    private final Condition condition = requestLock.newCondition();
+    /**
+     * 线程等待队列
+     */
+    private final Condition writeCondition = stateLock.newCondition();
 
 
     private LockUtil() {}
@@ -28,11 +37,11 @@ public class LockUtil {
         return lock;
     }
 
-    public ReentrantLock getRequestLock() {
-        return requestLock;
+    public ReentrantLock getStateLock() {
+        return stateLock;
     }
 
-    public Condition getCondition() {
-        return condition;
+    public Condition getWriteCondition() {
+        return writeCondition;
     }
 }

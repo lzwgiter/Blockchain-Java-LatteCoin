@@ -14,12 +14,10 @@ import com.latte.blockchain.utils.LockUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import java.nio.charset.StandardCharsets;
 import java.security.PrivateKey;
 import java.security.PublicKey;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.ReentrantLock;
-import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 /**
  * @author float311
@@ -65,8 +63,8 @@ public class TransactionServiceImpl implements ITransactionService {
         sender = sender.replace(" ", "+");
         recipient = recipient.replace(" ", "+");
         Transaction newTransaction = walletService.sendFunds(sender, recipient, value);
-        ReentrantLock requestLock = LockUtil.getLockUtil().getRequestLock();
-        Condition condition = LockUtil.getLockUtil().getCondition();
+        ReentrantLock requestLock = LockUtil.getLockUtil().getStateLock();
+        Condition condition = LockUtil.getLockUtil().getWriteCondition();
         // 若交易建立成功，则将交易放入交易池
         if (newTransaction != null) {
             requestLock.lock();
@@ -77,6 +75,7 @@ public class TransactionServiceImpl implements ITransactionService {
                 condition.signalAll();
             } finally {
                 requestLock.unlock();
+                System.out.println("锁已经释放");
             }
             return JsonUtil.toJson(newTransaction);
         } else {
@@ -91,7 +90,7 @@ public class TransactionServiceImpl implements ITransactionService {
      * @return 交易成功则返回true
      */
     @Override
-    public synchronized boolean processTransaction(Transaction transaction) {
+    public boolean processTransaction(Transaction transaction) {
         // 首先检查一个交易的合法性
         // 验签 TODO： 交易验签的操作会耗费时间，导致线程阻塞
 //        if (!isValidSignature(transaction)) {
@@ -135,19 +134,13 @@ public class TransactionServiceImpl implements ITransactionService {
     public float getInputsValue(Transaction transaction) {
         float total = 0;
         Utxo output;
-        ReentrantReadWriteLock lock = LockUtil.getLockUtil().getReadWriteLock();
-        lock.readLock().lock();
-        try {
-            for (String input : transaction.getInputUtxos()) {
-                output = utxoDao.getTransactionOutputById(input);
-                if (output == null) {
-                    return 0;
-                } else {
-                    total += output.getValue();
-                }
+        for (String input : transaction.getInputUtxos()) {
+            output = utxoDao.getTransactionOutputById(input);
+            if (output == null) {
+                return 0;
+            } else {
+                total += output.getValue();
             }
-        } finally {
-            lock.readLock().unlock();
         }
         return total;
     }

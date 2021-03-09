@@ -26,15 +26,6 @@ public interface IMineService extends Runnable{
     void mineNewBlock(Block block);
 
     /**
-     * 创建一个新的空区块
-     *
-     * @param preHash 前一区块的哈希值
-     * @param msg     区块附带的信息
-     * @return {@link Block}
-     */
-    Block createNewBlock(String preHash, String msg);
-
-    /**
      * 执行交易并将交易信息添加到区块中
      *
      * @param block       {@link Block} 区块
