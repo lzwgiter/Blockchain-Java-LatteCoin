@@ -15,7 +15,6 @@ import java.util.List;
 public interface TransactionDao extends JpaRepository<Transaction, String> {
     /**
      * 获取所有收款人为recipient的交易
-     * TODO
      *
      * @param recipient 收款人姓名
      * @return List Transactions

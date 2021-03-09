@@ -28,6 +28,7 @@ public class Transaction {
      * 交易的id
      */
     @Id
+    @Column(name = "transaction_id")
     private String id;
 
     /**
@@ -64,15 +65,19 @@ public class Transaction {
      * 交易输入
      */
     @ElementCollection(fetch = FetchType.EAGER)
-    private Set<String> inputUtxos;
+    private Set<String> inputUtxosId;
 
     /**
      * 交易输出
      */
-    @OneToMany(cascade = {CascadeType.REMOVE},
-            mappedBy = "refTransaction",
-            fetch = FetchType.EAGER)
+    @Transient
     private Set<Utxo> outputUtxos;
+
+    /**
+     * 交易输出id
+     */
+    @ElementCollection(fetch = FetchType.EAGER)
+    private Set<String> outputUtxosId;
 
     /**
      * 交易金额
@@ -97,13 +102,6 @@ public class Transaction {
     @JsonIgnore
     private String data;
 
-    /**
-     * 从属区块
-     */
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "refBlock", referencedColumnName = "id")
-    private Block refBlock;
-
     protected Transaction() {
     }
 
@@ -119,8 +117,8 @@ public class Transaction {
         this.sender = sender;
         this.recipient = recipient;
         this.value = value;
-        this.inputUtxos = inputs;
-        this.outputUtxos = new HashSet<>();
+        this.inputUtxosId = inputs;
+        this.outputUtxosId = new HashSet<>();
         this.timeStamp = System.currentTimeMillis();
     }
 

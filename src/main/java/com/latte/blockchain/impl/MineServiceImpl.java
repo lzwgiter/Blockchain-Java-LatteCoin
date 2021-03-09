@@ -222,7 +222,6 @@ public class MineServiceImpl implements IMineService {
                     return false;
                 }
             }
-
             // 将交易添加至区块中
             block.getTransactions().add(transaction);
         }

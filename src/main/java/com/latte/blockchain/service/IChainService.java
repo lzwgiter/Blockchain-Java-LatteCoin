@@ -16,4 +16,5 @@ public interface IChainService {
      * @return 成功则返回true
      */
     boolean initChain();
+
 }

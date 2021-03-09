@@ -21,15 +21,8 @@ public class Utxo {
      * id
      */
     @Id
-    @Column(name = "id")
+    @Column(name = "utxo_id")
     private String id;
-
-    /**
-     * 从属交易
-     */
-    @JsonIgnore
-    @ManyToOne(fetch = FetchType.EAGER)
-    private Transaction refTransaction;
 
     /**
      * 交易接受方
@@ -51,6 +44,11 @@ public class Utxo {
      * 时间戳
      */
     private long timeStamp;
+
+    /**
+     * 产生该UTXO的交易
+     */
+    private String refTransactionId;
 
     protected Utxo() {}
 

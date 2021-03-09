@@ -17,6 +17,8 @@ import org.springframework.stereotype.Service;
 
 import java.security.PrivateKey;
 import java.security.PublicKey;
+import java.util.HashSet;
+
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.ReentrantLock;
 
@@ -107,8 +109,8 @@ public class TransactionServiceImpl implements ITransactionService {
         }
 
         // 从全局删除交易方的UTXO
-        for (String input : transaction.getInputUtxos()) {
-            utxoDao.deleteById(input);
+        for (String inputId : transaction.getInputUtxosId()) {
+            utxoDao.deleteById(inputId);
         }
 
         float leftOver = inputsValue - transaction.getValue();
@@ -116,13 +118,20 @@ public class TransactionServiceImpl implements ITransactionService {
         PublicKey senderAddress = latteChain.getUsers().get(transaction.getSenderString()).getPublicKey();
         PublicKey recipientAddress = latteChain.getUsers().get(transaction.getRecipientString()).getPublicKey();
 
-
         // 添加交易输出
-        // 将金额发送至接收方
-        transaction.getOutputUtxos().add(new Utxo(recipientAddress, transaction.getValue()));
+        transaction.setOutputUtxos(new HashSet<>());
+        Utxo sendUtxo = new Utxo(recipientAddress, transaction.getValue());
+        Utxo backUtxo = new Utxo(senderAddress, leftOver);
+        transaction.getOutputUtxosId().add(sendUtxo.getId());
+        transaction.getOutputUtxosId().add(backUtxo.getId());
 
+        sendUtxo.setRefTransactionId(transaction.getId());
+        backUtxo.setRefTransactionId(transaction.getId());
+        // 将金额发送至接收方
+        transaction.getOutputUtxos().add(sendUtxo);
         // 将剩余金额返回至发送方
-        transaction.getOutputUtxos().add(new Utxo(senderAddress, leftOver));
+        transaction.getOutputUtxos().add(backUtxo);
+        transactionDao.saveAndFlush(transaction);
         return true;
     }
 
@@ -136,7 +145,7 @@ public class TransactionServiceImpl implements ITransactionService {
     public float getInputsValue(Transaction transaction) {
         float total = 0;
         Utxo output;
-        for (String input : transaction.getInputUtxos()) {
+        for (String input : transaction.getInputUtxosId()) {
             output = utxoDao.getTransactionOutputById(input);
             if (output == null) {
                 return 0;
@@ -155,6 +164,11 @@ public class TransactionServiceImpl implements ITransactionService {
      */
     @Override
     public String auditTransaction(String targetUserName) {
+//        StringBuilder sb = new StringBuilder();
+//        List<Transaction> transactionsList = transactionDao.getTransactionsByRecipientString(targetUserName);
+//        for (Transaction transaction : transactionsList) {
+//
+//        }
         return null;
     }
 
