@@ -11,6 +11,7 @@ import com.latte.blockchain.utils.CryptoUtil;
 import com.latte.blockchain.utils.JsonUtil;
 import com.latte.blockchain.utils.LatteChain;
 import com.latte.blockchain.utils.LockUtil;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -24,6 +25,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * @since 2021/01/29
  */
 @Service
+@Slf4j
 public class TransactionServiceImpl implements ITransactionService {
 
     private final LatteChain latteChain = LatteChain.getInstance();
@@ -72,14 +74,14 @@ public class TransactionServiceImpl implements ITransactionService {
                 transactionDao.save(newTransaction);
                 transactionPoolDao.save(
                         new TransactionsPoolEntity(newTransaction.getId(), newTransaction.getTimeStamp()));
+                log.info("新交易已提交！id: " + newTransaction.getId());
                 condition.signalAll();
             } finally {
                 requestLock.unlock();
-                System.out.println("锁已经释放");
             }
             return JsonUtil.toJson(newTransaction);
         } else {
-            return "账户[" + sender + "]余额不足，交易失败！";
+            return "账户[" + sender + "]余额不足或用户不存在，交易失败！";
         }
     }
 
@@ -92,11 +94,11 @@ public class TransactionServiceImpl implements ITransactionService {
     @Override
     public boolean processTransaction(Transaction transaction) {
         // 首先检查一个交易的合法性
-        // 验签 TODO： 交易验签的操作会耗费时间，导致线程阻塞
-//        if (!isValidSignature(transaction)) {
-//            System.out.println("# 交易签名验证失败");
-//            return false;
-//        }
+        // 验签
+        if (!isValidSignature(transaction)) {
+            log.warn("交易" + transaction.getId() + "签名信息异常！请审计该交易！");
+            return false;
+        }
         float inputsValue = getInputsValue(transaction);
         // 计算剩余价值
         if (inputsValue == 0) {
@@ -165,10 +167,12 @@ public class TransactionServiceImpl implements ITransactionService {
      * 验证交易签名
      *
      * @param transaction {@link Transaction} 交易
-     * @return boolean
+     * @return 是否为一个合法的签名信息
      */
     @Override
     public boolean isValidSignature(Transaction transaction) {
+        Wallet senderWallet = latteChain.getUsers().get(transaction.getSenderString());
+        transaction.setSender(senderWallet.getPublicKey());
         return CryptoUtil.verifySm2Signature(transaction.getSender(),
                 transaction.getData(),
                 transaction.getSignature());

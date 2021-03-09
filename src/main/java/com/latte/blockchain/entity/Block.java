@@ -1,6 +1,6 @@
 package com.latte.blockchain.entity;
 
-import com.latte.blockchain.enums.LatteChainEnum;
+import com.latte.blockchain.enums.LatteChainConfEnum;
 import lombok.Data;
 
 import javax.persistence.*;
@@ -65,7 +65,7 @@ public class Block {
     public Block(String previousHash, String msg) {
         this.previousHash = previousHash;
         this.msg = msg;
-        transactions = new ArrayList<>(LatteChainEnum.MAX_TRANSACTION_AMOUNT);
+        transactions = new ArrayList<>(LatteChainConfEnum.MAX_TRANSACTION_AMOUNT);
         this.timeStamp = System.currentTimeMillis();
         this.nonce = 0;
     }

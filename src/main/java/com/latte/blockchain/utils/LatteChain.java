@@ -14,7 +14,7 @@ import java.util.HashMap;
 @Data
 public class LatteChain {
     /**
-     * lattecoin实例
+     * latteChain实例
      */
     private static LatteChain LATTE_COIN = new LatteChain();
 

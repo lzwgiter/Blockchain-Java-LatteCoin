@@ -6,7 +6,7 @@ package com.latte.blockchain.enums;
  * @author float311
  * @since 2021/01/28
  */
-public class LatteChainEnum {
+public class LatteChainConfEnum {
 
     /**
      * 哈希0字符串
@@ -16,7 +16,7 @@ public class LatteChainEnum {
     /**
      * 难度值
      */
-    public static final Integer DIFFICULTY = 3;
+    public static final Integer DIFFICULTY = 4;
 
     /**
      * 难度字符串
@@ -27,7 +27,7 @@ public class LatteChainEnum {
     /**
      * 系统预置账户数量
      */
-    public static final int INIT_ACCOUNT_AMOUNTS = 3;
+    public static final int INIT_ACCOUNT_AMOUNTS = 5;
 
     /**
      * 每个区块所能包含的最大交易数量
@@ -42,5 +42,5 @@ public class LatteChainEnum {
     /**
      * 每包含一个交易信息则奖励0.01个LC
      */
-    public static final float TRANSACTION_SUBSIDY = 0.01f;
+    public static final float TRANSACTION_SUBSIDY = 0.1f;
 }

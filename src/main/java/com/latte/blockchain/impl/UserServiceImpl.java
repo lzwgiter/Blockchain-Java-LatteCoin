@@ -2,7 +2,7 @@ package com.latte.blockchain.impl;
 
 import com.latte.blockchain.utils.LatteChain;
 import com.latte.blockchain.entity.Wallet;
-import com.latte.blockchain.enums.LatteChainEnum;
+import com.latte.blockchain.enums.LatteChainConfEnum;
 import com.latte.blockchain.service.IUserService;
 import com.latte.blockchain.service.IWalletService;
 import com.latte.blockchain.utils.JsonUtil;
@@ -34,7 +34,7 @@ public class UserServiceImpl implements IUserService {
         Wallet newUser = new Wallet();
         String coinbaseAddress = newUser.getName();
         latteChain.getUsers().put(coinbaseAddress, newUser);
-        for (int i = 1; i < LatteChainEnum.INIT_ACCOUNT_AMOUNTS; i++) {
+        for (int i = 1; i < LatteChainConfEnum.INIT_ACCOUNT_AMOUNTS; i++) {
             newUser = new Wallet();
             latteChain.getUsers().put(newUser.getName(), newUser);
         }

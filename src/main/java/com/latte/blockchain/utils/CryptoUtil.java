@@ -1,7 +1,7 @@
 package com.latte.blockchain.utils;
 
 import com.latte.blockchain.entity.Transaction;
-import com.latte.blockchain.enums.LatteChainEnum;
+import com.latte.blockchain.enums.LatteChainConfEnum;
 
 import java.util.List;
 import java.util.Base64;
@@ -68,19 +68,10 @@ public class CryptoUtil {
      * @param publicKey 公钥
      * @param msg       消息
      * @param signature 签名
-     * @return boolean
+     * @return 是否为一个合法的SM2签名信息
      */
     public static boolean verifySm2Signature(PublicKey publicKey, String msg, byte[] signature) {
         return SmUtil.sm2(null, publicKey).verify(msg.getBytes(StandardCharsets.UTF_8), signature);
-    }
-
-    /**
-     * 构造指定难度的0填充字符串
-     *
-     * @return String
-     */
-    public static String getDifficultyString() {
-        return new String(new char[LatteChainEnum.DIFFICULTY]).replace('\0', '0');
     }
 
     /**
