@@ -1,9 +1,9 @@
 package com.latte.blockchain.impl;
 
-import com.latte.blockchain.dao.BlockDao;
-import com.latte.blockchain.dao.TransactionDao;
-import com.latte.blockchain.dao.TransactionPoolDao;
-import com.latte.blockchain.dao.UtxoDao;
+import com.latte.blockchain.repository.BlockRepo;
+import com.latte.blockchain.repository.TransactionRepo;
+import com.latte.blockchain.repository.TransactionPoolRepo;
+import com.latte.blockchain.repository.UtxoRepo;
 import com.latte.blockchain.entity.*;
 import com.latte.blockchain.service.*;
 import com.latte.blockchain.utils.LatteChain;
@@ -46,22 +46,22 @@ public class MineServiceImpl implements IMineService {
     /**
      * 数据库区块DAO对象
      */
-    private BlockDao blockDao;
+    private BlockRepo blockDao;
 
     /**
      * 交易DAO对象
      */
-    private TransactionDao transactionDao;
+    private TransactionRepo transactionDao;
 
     /**
      * 交易池DAO对象
      */
-    private TransactionPoolDao transactionPoolDao;
+    private TransactionPoolRepo transactionPoolDao;
 
     /**
      * 全局UTXO DAO对象
      */
-    private UtxoDao utxoDao;
+    private UtxoRepo utxoDao;
 
 
     /**
@@ -72,10 +72,10 @@ public class MineServiceImpl implements IMineService {
     public void run() {
         transactionService = BeanContext.getApplicationContext().getBean(TransactionServiceImpl.class);
         userService = BeanContext.getApplicationContext().getBean(UserServiceImpl.class);
-        blockDao = BeanContext.getApplicationContext().getBean(BlockDao.class);
-        transactionDao = BeanContext.getApplicationContext().getBean(TransactionDao.class);
-        transactionPoolDao = BeanContext.getApplicationContext().getBean(TransactionPoolDao.class);
-        utxoDao = BeanContext.getApplicationContext().getBean(UtxoDao.class);
+        blockDao = BeanContext.getApplicationContext().getBean(BlockRepo.class);
+        transactionDao = BeanContext.getApplicationContext().getBean(TransactionRepo.class);
+        transactionPoolDao = BeanContext.getApplicationContext().getBean(TransactionPoolRepo.class);
+        utxoDao = BeanContext.getApplicationContext().getBean(UtxoRepo.class);
 
         ReentrantLock stateLock = LockUtil.getLockUtil().getStateLock();
         Condition condition = LockUtil.getLockUtil().getWriteCondition();
@@ -133,12 +133,12 @@ public class MineServiceImpl implements IMineService {
     public boolean initChain() {
         userService = BeanContext.getApplicationContext().getBean(UserServiceImpl.class);
         transactionService = BeanContext.getApplicationContext().getBean(TransactionServiceImpl.class);
-        transactionDao = BeanContext.getApplicationContext().getBean(TransactionDao.class);
-        utxoDao = BeanContext.getApplicationContext().getBean(UtxoDao.class);
+        transactionDao = BeanContext.getApplicationContext().getBean(TransactionRepo.class);
+        utxoDao = BeanContext.getApplicationContext().getBean(UtxoRepo.class);
 
         // 初始化系统预置用户信息
-        String coinbaseAddress = userService.initUser();
-        PublicKey coinbasePublicKey = userService.getUserPublicKey(coinbaseAddress);
+        userService.initUser();
+        PublicKey coinbasePublicKey = userService.getUserPublicKey("admin");
         // 初始块奖励
         Utxo output = new Utxo(coinbasePublicKey, LatteChainConfEnum.BLOCK_SUBSIDY);
         utxoDao.save(output);
@@ -172,7 +172,7 @@ public class MineServiceImpl implements IMineService {
      */
     @Override
     public void addBlock(Block blockToAdd) {
-        blockDao = BeanContext.getApplicationContext().getBean(BlockDao.class);
+        blockDao = BeanContext.getApplicationContext().getBean(BlockRepo.class);
         if (blockToAdd.getPreviousHash().equals(LatteChainConfEnum.ZERO_HASH)) {
             // 当前待添加块为创世块
             blockToAdd.setId(0);

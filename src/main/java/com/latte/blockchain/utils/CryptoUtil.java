@@ -1,7 +1,7 @@
 package com.latte.blockchain.utils;
 
+import cn.hutool.crypto.asymmetric.KeyType;
 import com.latte.blockchain.entity.Transaction;
-import com.latte.blockchain.enums.LatteChainConfEnum;
 
 import java.util.List;
 import java.util.Base64;
@@ -20,27 +20,6 @@ import cn.hutool.crypto.SmUtil;
  * @since 2021/1/27
  */
 public class CryptoUtil {
-
-    /**
-     * Sm4对称加密函数
-     *
-     * @param msg 待加密消息
-     * @return 加密结果
-     */
-    public static String applySm4Encrypt(String msg, byte[] secretKey) {
-        return SmUtil.sm4(secretKey).encryptBase64(msg);
-    }
-
-    /**
-     * Sm4对称解密函数
-     *
-     * @param input 待解密消息
-     * @return 解密结果
-     */
-    public static String applySm4Decrypt(String input, byte[] secretKey) {
-        return SmUtil.sm4(secretKey).decryptStr(input);
-    }
-
     /**
      * Sm3哈希函数
      *
@@ -72,6 +51,55 @@ public class CryptoUtil {
      */
     public static boolean verifySm2Signature(PublicKey publicKey, String msg, byte[] signature) {
         return SmUtil.sm2(null, publicKey).verify(msg.getBytes(StandardCharsets.UTF_8), signature);
+    }
+
+    /**
+     * SM2加密函数
+     *
+     * @param publicKey 加密公钥
+     * @param msg       待加密消息
+     * @return String 加密结果
+     */
+    public static String applySm2Encrypt(PublicKey publicKey, String msg) {
+        // return SmUtil.sm2(null, publicKey).encryptBcd(msg, KeyType.PublicKey);
+        return SmUtil.sm2(null, publicKey).encryptBase64(msg, KeyType.PublicKey);
+    }
+
+    /**
+     * SM2解密函数
+     *
+     * @param privateKey   解密私钥
+     * @param encryptedMsg 待解密消息
+     * @return String 解密结果
+     */
+    public static String applySm2Decrypted(PrivateKey privateKey, String encryptedMsg) {
+        return SmUtil.sm2(privateKey, null).decryptStr(encryptedMsg, KeyType.PrivateKey);
+    }
+
+    /**
+     * 根据交易信息生成加密数据
+     *
+     * @param adminPubKey 管理员公钥
+     */
+    public static String getEncryptedTransaction(Transaction transaction, PublicKey adminPubKey) {
+        String originData = transaction.getSenderString() + '-' +
+                transaction.getRecipientString() + '-' +
+                transaction.getValue() + '-' +
+                transaction.getTimeStamp();
+        return applySm2Encrypt(adminPubKey, originData);
+    }
+
+    /**
+     * 根据加密信息解密交易数据
+     *
+     * @param input 加密信息
+     * @return 交易信息 {@link Transaction}
+     */
+    public static String getDecryptedTransaction(String input, PrivateKey adminPriKey) {
+        String originData = applySm2Decrypted(adminPriKey, input);
+        String[] raw = originData.split("-");
+        return "Sender: " + raw[0] + "; Recipient: " + raw[1] +
+                "; Value: " + raw[2] + "; TimeStamp: " + raw[3];
     }
 
     /**

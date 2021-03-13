@@ -9,11 +9,10 @@ import java.security.PublicKey;
 public interface IUserService {
 
     /**
-     * 初始化10个用户，并返回coinbase账户
+     * 初始化10个用户
      *
-     * @return String 返回coinbase账户公钥地址
      */
-    String initUser();
+    void initUser();
 
     /**
      * 返回查询用户PublicKey信息

@@ -3,6 +3,7 @@ package com.latte.blockchain.utils;
 import com.latte.blockchain.entity.Wallet;
 import lombok.Data;
 
+import java.security.PublicKey;
 import java.util.HashMap;
 
 /**
@@ -22,6 +23,11 @@ public class LatteChain {
      * 区块链中的用户信息
      */
     private HashMap<String, Wallet> users = new HashMap<>();
+
+    /**
+     * 管理员公钥
+     */
+    private PublicKey adminPublicKey;
 
     /**
      * 最小交易值

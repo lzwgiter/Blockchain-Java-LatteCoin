@@ -31,10 +31,10 @@ public interface ITransactionService {
     /**
      * 获取targetUserName作为接受方的所有交易的交易链
      *
-     * @param targetUserName 待审计用户名称
+     * @param transactionId 待审计交易id
      * @return 交易链信息
      */
-    String auditTransaction(String targetUserName);
+    String auditTransaction(String transactionId);
 
     /**
      * 获取交易输入的总值

@@ -1,4 +1,4 @@
-package com.latte.blockchain.dao;
+package com.latte.blockchain.repository;
 
 import com.latte.blockchain.entity.Block;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -10,7 +10,7 @@ import org.springframework.transaction.annotation.Transactional;
  * @author float311
  * @since 2021/02/21
  */
-public interface BlockDao extends JpaRepository<Block, String> {
+public interface BlockRepo extends JpaRepository<Block, String> {
     /**
      * 获取链上最后一条记录
      *

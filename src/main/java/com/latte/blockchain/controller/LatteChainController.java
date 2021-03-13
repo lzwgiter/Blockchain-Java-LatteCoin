@@ -56,14 +56,14 @@ public class LatteChainController {
     }
 
     /**
-     * 对指定用户的所有交易进行审计
+     * 对指定的交易进行追踪
      *
-     * @param targetUser 指定的用户
-     * @return 该用户的所有交易链信息
+     * @param id 待审计交易
+     * @return 交易链信息
      */
-    @PostMapping(path = "/auditAllTransaction")
-    public String audit(@RequestParam(name = "target") String targetUser) {
-        return "";
+    @PostMapping(path = "/auditTransaction")
+    public String audit(@RequestParam(name = "transactionId") String id) {
+        return transactionService.auditTransaction(id);
     }
 
     /**

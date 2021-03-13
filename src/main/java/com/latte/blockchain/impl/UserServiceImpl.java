@@ -26,19 +26,19 @@ public class UserServiceImpl implements IUserService {
     /**
      * 初始化区块链系统中预置账户信息
      *
-     * @return String coinbase账户的账户地址
      */
     @Override
-    public String initUser() {
+    public void initUser() {
         // 添加并初始化所有账户
         Wallet newUser = new Wallet();
-        String coinbaseAddress = newUser.getName();
-        latteChain.getUsers().put(coinbaseAddress, newUser);
+        newUser.setName("admin");
+        // 设置系统管理员公钥地址
+        latteChain.setAdminPublicKey(newUser.getPublicKey());
+        latteChain.getUsers().put("admin", newUser);
         for (int i = 1; i < LatteChainConfEnum.INIT_ACCOUNT_AMOUNTS; i++) {
             newUser = new Wallet();
             latteChain.getUsers().put(newUser.getName(), newUser);
         }
-        return coinbaseAddress;
     }
 
     /**

@@ -1,4 +1,4 @@
-package com.latte.blockchain.dao;
+package com.latte.blockchain.repository;
 
 import com.latte.blockchain.entity.Transaction;
 import com.latte.blockchain.entity.TransactionsPoolEntity;
@@ -11,7 +11,7 @@ import java.util.List;
  * @author float311
  * @since 2021/03/08
  */
-public interface TransactionPoolDao extends JpaRepository<TransactionsPoolEntity, String> {
+public interface TransactionPoolRepo extends JpaRepository<TransactionsPoolEntity, String> {
     /**
      * 获取当前交易池中的交易数量
      *

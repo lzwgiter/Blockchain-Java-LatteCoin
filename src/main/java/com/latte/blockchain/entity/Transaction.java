@@ -2,7 +2,6 @@ package com.latte.blockchain.entity;
 
 import com.fasterxml.jackson.annotation.JsonAlias;
 
-import java.io.Serializable;
 import java.security.PublicKey;
 import java.util.HashSet;
 import java.util.Set;
@@ -49,8 +48,8 @@ public class Transaction {
      * 发起方字符串
      */
     @Getter
-    @Column(name = "Sender")
     @JsonAlias({"sender"})
+    @Column(name = "sender")
     private String senderString;
 
     /**
@@ -82,7 +81,6 @@ public class Transaction {
     /**
      * 交易金额
      */
-    @Column(scale = 2)
     private Float value;
 
     /**
@@ -100,6 +98,7 @@ public class Transaction {
      * 数据 - 由交易双方、交易金额、时间戳组成
      */
     @JsonIgnore
+    @Column(name = "transaction_data", length = 400)
     private String data;
 
     protected Transaction() {
@@ -120,9 +119,5 @@ public class Transaction {
         this.inputUtxosId = inputs;
         this.outputUtxosId = new HashSet<>();
         this.timeStamp = System.currentTimeMillis();
-    }
-
-    public void setData() {
-        this.data = this.getSenderString() + this.getRecipientString() + value + timeStamp;
     }
 }

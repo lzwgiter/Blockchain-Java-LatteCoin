@@ -1,8 +1,8 @@
 package com.latte.blockchain.impl;
 
-import com.latte.blockchain.dao.TransactionDao;
-import com.latte.blockchain.dao.TransactionPoolDao;
-import com.latte.blockchain.dao.UtxoDao;
+import com.latte.blockchain.repository.TransactionRepo;
+import com.latte.blockchain.repository.TransactionPoolRepo;
+import com.latte.blockchain.repository.UtxoRepo;
 import com.latte.blockchain.entity.*;
 import com.latte.blockchain.service.ITransactionService;
 import com.latte.blockchain.service.IWalletService;
@@ -17,6 +17,7 @@ import org.springframework.stereotype.Service;
 
 import java.security.PrivateKey;
 import java.security.PublicKey;
+import java.util.ArrayList;
 import java.util.HashSet;
 
 import java.util.concurrent.locks.Condition;
@@ -39,19 +40,19 @@ public class TransactionServiceImpl implements ITransactionService {
      * 交易DAO对象
      */
     @Autowired
-    private TransactionDao transactionDao;
+    private TransactionRepo transactionRepo;
 
     /**
      * 交易池DAO对象
      */
     @Autowired
-    private TransactionPoolDao transactionPoolDao;
+    private TransactionPoolRepo transactionPoolRepo;
 
     /**
      * UTXO DAO对象
      */
     @Autowired
-    private UtxoDao utxoDao;
+    private UtxoRepo utxoRepo;
 
     /**
      * 发起一笔交易
@@ -73,8 +74,8 @@ public class TransactionServiceImpl implements ITransactionService {
         if (newTransaction != null) {
             requestLock.lock();
             try {
-                transactionDao.save(newTransaction);
-                transactionPoolDao.save(
+                transactionRepo.save(newTransaction);
+                transactionPoolRepo.save(
                         new TransactionsPoolEntity(newTransaction.getId(), newTransaction.getTimeStamp()));
                 log.info("新交易已提交！id: " + newTransaction.getId());
                 condition.signalAll();
@@ -110,7 +111,7 @@ public class TransactionServiceImpl implements ITransactionService {
 
         // 从全局删除交易方的UTXO
         for (String inputId : transaction.getInputUtxosId()) {
-            utxoDao.deleteById(inputId);
+            utxoRepo.deleteById(inputId);
         }
 
         float leftOver = inputsValue - transaction.getValue();
@@ -131,7 +132,7 @@ public class TransactionServiceImpl implements ITransactionService {
         transaction.getOutputUtxos().add(sendUtxo);
         // 将剩余金额返回至发送方
         transaction.getOutputUtxos().add(backUtxo);
-        transactionDao.saveAndFlush(transaction);
+        transactionRepo.saveAndFlush(transaction);
         return true;
     }
 
@@ -146,7 +147,7 @@ public class TransactionServiceImpl implements ITransactionService {
         float total = 0;
         Utxo output;
         for (String input : transaction.getInputUtxosId()) {
-            output = utxoDao.getTransactionOutputById(input);
+            output = utxoRepo.getTransactionOutputById(input);
             if (output == null) {
                 return 0;
             } else {
@@ -159,17 +160,29 @@ public class TransactionServiceImpl implements ITransactionService {
     /**
      * 获取targetUserName作为接受方的所有交易的交易链
      *
-     * @param targetUserName 待审计用户名称
+     * @param transactionId 待审计交易id
      * @return 交易链信息
      */
     @Override
-    public String auditTransaction(String targetUserName) {
-//        StringBuilder sb = new StringBuilder();
-//        List<Transaction> transactionsList = transactionDao.getTransactionsByRecipientString(targetUserName);
-//        for (Transaction transaction : transactionsList) {
-//
-//        }
-        return null;
+    public String auditTransaction(String transactionId) {
+        StringBuilder sb = new StringBuilder();
+        Transaction transaction = transactionRepo.getTransactionById(transactionId);
+        String data = "Id: " + transaction.getId() + "; " +
+                CryptoUtil.getDecryptedTransaction(transaction.getData(),
+                        latteChain.getUsers().get("admin").getPrivateKey()) + "\n<-";
+        sb.append(data);
+        // 获取该交易的所有输入的utxo的id
+        ArrayList<String> queue = new ArrayList<>(transaction.getInputUtxosId());
+        for (String id : queue) {
+            if (!transactionRepo.existsTransactionByOutputUtxosId(id)) {
+                // 为挖矿奖励，追踪结束
+                return sb.toString();
+            }
+            // 获取产生该输入的交易实体
+            Transaction parentTransaction = transactionRepo.getTransactionByOutputUtxosId(id);
+            sb.append(auditTransaction(parentTransaction.getId()));
+        }
+        return sb.toString();
     }
 
     @Override

@@ -11,6 +11,7 @@ import java.util.HashMap;
 
 import lombok.Getter;
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import lombok.Setter;
 
 /**
  * 钱包类
@@ -24,7 +25,8 @@ public class Wallet {
      * 用户名
      */
     @Getter
-    private final String name;
+    @Setter
+    private String name;
 
     /**
      * 用户私钥信息

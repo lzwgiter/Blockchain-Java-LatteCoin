@@ -1,10 +1,11 @@
 package com.latte.blockchain.impl;
 
-import com.latte.blockchain.dao.UtxoDao;
+import com.latte.blockchain.repository.UtxoRepo;
 import com.latte.blockchain.entity.*;
 import com.latte.blockchain.service.ITransactionService;
 import com.latte.blockchain.service.IWalletService;
 
+import com.latte.blockchain.utils.CryptoUtil;
 import com.latte.blockchain.utils.LatteChain;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -28,7 +29,7 @@ public class WalletServiceImpl implements IWalletService {
      * UTXO DAO
      */
     @Autowired
-    private UtxoDao utxoDao;
+    private UtxoRepo utxoDao;
 
     /**
      * 获取账户余额
@@ -103,7 +104,8 @@ public class WalletServiceImpl implements IWalletService {
         newTransaction.setSenderString(sender);
         newTransaction.setRecipientString(recipient);
         // 计算交易ID
-        newTransaction.setData();
+        newTransaction.setData(CryptoUtil.getEncryptedTransaction(newTransaction,
+                LatteChain.getInstance().getAdminPublicKey()));
         newTransaction.setId(transactionService.calculateTransactionHash(newTransaction));
         transactionService.generateSignature(senderWallet.getPrivateKey(), newTransaction);
 
