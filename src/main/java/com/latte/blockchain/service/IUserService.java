@@ -1,6 +1,9 @@
 package com.latte.blockchain.service;
 
+import com.latte.blockchain.entity.Wallet;
+
 import java.security.PublicKey;
+import java.util.Map;
 
 /**
  * @author float311
@@ -26,5 +29,5 @@ public interface IUserService {
      *
      * @return String
      */
-    String getAllUsersInfo();
+    Map<String, Wallet> getAllUsersInfo();
 }

@@ -12,6 +12,7 @@ import java.security.PrivateKey;
 import java.security.PublicKey;
 
 import cn.hutool.crypto.SmUtil;
+import com.latte.blockchain.entity.TransactionDigest;
 
 /**
  * 生成电子签名的工具类
@@ -61,7 +62,6 @@ public class CryptoUtil {
      * @return String 加密结果
      */
     public static String applySm2Encrypt(PublicKey publicKey, String msg) {
-        // return SmUtil.sm2(null, publicKey).encryptBcd(msg, KeyType.PublicKey);
         return SmUtil.sm2(null, publicKey).encryptBase64(msg, KeyType.PublicKey);
     }
 
@@ -82,11 +82,15 @@ public class CryptoUtil {
      * @param adminPubKey 管理员公钥
      */
     public static String getEncryptedTransaction(Transaction transaction, PublicKey adminPubKey) {
+        StringBuilder sb = new StringBuilder();
         String originData = transaction.getSenderString() + '-' +
                 transaction.getRecipientString() + '-' +
                 transaction.getValue() + '-' +
-                transaction.getTimeStamp();
-        return applySm2Encrypt(adminPubKey, originData);
+                transaction.getTimeStamp() + '-';
+        sb.append(originData);
+        transaction.setId(applySm3Hash(originData));
+        sb.append(transaction.getId());
+        return applySm2Encrypt(adminPubKey, sb.toString());
     }
 
     /**
@@ -95,11 +99,10 @@ public class CryptoUtil {
      * @param input 加密信息
      * @return 交易信息 {@link Transaction}
      */
-    public static String getDecryptedTransaction(String input, PrivateKey adminPriKey) {
+    public static TransactionDigest getDecryptedTransaction(String input, PrivateKey adminPriKey) {
         String originData = applySm2Decrypted(adminPriKey, input);
         String[] raw = originData.split("-");
-        return "Sender: " + raw[0] + "; Recipient: " + raw[1] +
-                "; Value: " + raw[2] + "; TimeStamp: " + raw[3];
+        return new TransactionDigest(raw[4], raw[0], raw[1], raw[2], raw[3]);
     }
 
     /**

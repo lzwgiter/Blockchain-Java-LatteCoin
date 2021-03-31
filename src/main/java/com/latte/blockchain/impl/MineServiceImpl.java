@@ -131,6 +131,10 @@ public class MineServiceImpl implements IMineService {
      */
     @Override
     public boolean initChain() {
+        if (latteChain.isInit()) {
+            // 已经初始化
+            return false;
+        }
         userService = BeanContext.getApplicationContext().getBean(UserServiceImpl.class);
         transactionService = BeanContext.getApplicationContext().getBean(TransactionServiceImpl.class);
         transactionDao = BeanContext.getApplicationContext().getBean(TransactionRepo.class);
@@ -151,6 +155,7 @@ public class MineServiceImpl implements IMineService {
         for (Wallet user : latteChain.getUsers().values()) {
             user.getWorkerThread().start();
         }
+        latteChain.setInit(true);
         return true;
     }
 

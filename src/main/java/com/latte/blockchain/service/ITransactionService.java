@@ -1,8 +1,10 @@
 package com.latte.blockchain.service;
 
 import com.latte.blockchain.entity.Transaction;
+import com.latte.blockchain.entity.TransactionDigest;
 
 import java.security.PrivateKey;
+import java.util.ArrayList;
 
 /**
  * @author float311
@@ -16,9 +18,9 @@ public interface ITransactionService {
      * @param sender    交易发起方
      * @param recipient 交易接受方
      * @param value     交易金额
-     * @return String 交易信息
+     * @return Transaction {@link Transaction} 交易信息
      */
-    String createTransaction(String sender, String recipient, float value);
+    Transaction createTransaction(String sender, String recipient, float value);
 
     /**
      * 计算交易的输出
@@ -32,9 +34,9 @@ public interface ITransactionService {
      * 获取targetUserName作为接受方的所有交易的交易链
      *
      * @param transactionId 待审计交易id
-     * @return 交易链信息
+     * @return {@link TransactionDigest} 交易链信息
      */
-    String auditTransaction(String transactionId);
+    ArrayList<TransactionDigest> auditTransaction(String transactionId);
 
     /**
      * 获取交易输入的总值

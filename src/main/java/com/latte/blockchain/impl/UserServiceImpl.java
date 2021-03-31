@@ -10,6 +10,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.security.PublicKey;
+import java.util.Map;
 
 /**
  * @author float311
@@ -53,11 +54,11 @@ public class UserServiceImpl implements IUserService {
     }
 
     @Override
-    public String getAllUsersInfo() {
+    public Map<String, Wallet> getAllUsersInfo() {
         // 刷新所有用戶的信息
         for (String address : latteChain.getUsers().keySet()) {
-            walletService.getBalance(address);
+            latteChain.getUsers().get(address).setBalance(walletService.getBalance(address));
         }
-        return JsonUtil.toJson(latteChain.getUsers());
+        return latteChain.getUsers();
     }
 }

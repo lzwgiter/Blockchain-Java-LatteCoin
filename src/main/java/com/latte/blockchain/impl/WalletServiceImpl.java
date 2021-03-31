@@ -53,7 +53,7 @@ public class WalletServiceImpl implements IWalletService {
     /**
      * 获取账户余额
      *
-     * @param address 用户账户地址
+     * @param address String 用户账户地址
      * @return 账户余额
      */
     @Override
@@ -80,6 +80,7 @@ public class WalletServiceImpl implements IWalletService {
             return null;
         }
 
+        // 收集用户的账户金额
         if (this.getBalance(senderWallet) < value) {
             // 发起方余额不足，取消交易
             return null;
@@ -103,14 +104,12 @@ public class WalletServiceImpl implements IWalletService {
                 recipientWallet.getPublicKey(), value, inputs);
         newTransaction.setSenderString(sender);
         newTransaction.setRecipientString(recipient);
-        // 计算交易ID
+        // 设置交易数据
         newTransaction.setData(CryptoUtil.getEncryptedTransaction(newTransaction,
                 LatteChain.getInstance().getAdminPublicKey()));
-        newTransaction.setId(transactionService.calculateTransactionHash(newTransaction));
         transactionService.generateSignature(senderWallet.getPrivateKey(), newTransaction);
 
-
-        // 扣除发起者的花费的UTXO(从个人钱包里) TODO: 需要从个人钱包扣除吗？还是直接从全局扣除？需要个人钱包这个概念吗？
+        // 扣除发起者的花费的UTXO(从个人钱包里)
         for (String input : inputs) {
             senderWallet.getUTXOs().remove(input);
         }

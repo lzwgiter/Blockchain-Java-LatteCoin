@@ -11,3 +11,8 @@ spring:
     database-platform: org.hibernate.dialect.MySQL5InnoDBDialect
     hibernate:
       ddl-auto: update
+  thymeleaf:
+    encoding: UTF-8
+  web:
+    resources:
+      static-locations: classpath:/templates/, classpath:/static/

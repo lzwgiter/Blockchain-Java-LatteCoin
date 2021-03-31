@@ -1,19 +1,23 @@
 package com.latte.blockchain.controller;
 
+import com.latte.blockchain.entity.Transaction;
 import com.latte.blockchain.service.*;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.ui.Model;
+
+import java.util.ArrayList;
 
 
 /**
  * @author float311
  * @since 2021/01/31
  */
-@RestController
+@Controller
 public class LatteChainController {
 
     @Autowired
@@ -32,12 +36,22 @@ public class LatteChainController {
      * 初始化LatteChain区块链系统，初始化预置账户并创建创世块
      */
     @GetMapping("/init")
-    public String initSystem() {
+    public String initSystem(Model model) {
         if (chainService.initChain()) {
-            return userService.getAllUsersInfo();
+            return "init";
         } else {
-            return "初始化失败";
+            model.addAttribute("msg", "初始化失败，已初始化或系统错误！");
+            return "error";
         }
+    }
+
+    /**
+     * 查看当前所有的账户信息
+     */
+    @GetMapping("/allUsersInfo")
+    public String getAllUsersInfo(Model model) {
+        model.addAttribute("usersInfo", userService.getAllUsersInfo());
+        return "allUsers";
     }
 
     /**
@@ -51,8 +65,11 @@ public class LatteChainController {
     @PostMapping(path = "/trade")
     public String sendFunds(@RequestParam(name = "sender") String sender,
                             @RequestParam(name = "recipient") String recipient,
-                            @RequestParam(name = "value") float value) {
-        return transactionService.createTransaction(sender, recipient, value);
+                            @RequestParam(name = "value") float value,
+                            Model model) {
+        model.addAttribute("transactionInfo",
+                transactionService.createTransaction(sender, recipient, value));
+        return "transaction";
     }
 
     /**
@@ -62,8 +79,9 @@ public class LatteChainController {
      * @return 交易链信息
      */
     @PostMapping(path = "/auditTransaction")
-    public String audit(@RequestParam(name = "transactionId") String id) {
-        return transactionService.auditTransaction(id);
+    public String audit(@RequestParam(name = "transactionId") String id, Model model) {
+        model.addAttribute("traceResult", transactionService.auditTransaction(id));
+        return "audit";
     }
 
     /**
@@ -73,7 +91,8 @@ public class LatteChainController {
      * @return String
      */
     @GetMapping(path = "/queryBalance")
-    public String getUserBalance(@RequestParam(name = "address") String address) {
-        return "余额：" + walletService.getBalance(address) + "LC";
+    public String getUserBalance(@RequestParam(name = "address") String address, Model model) {
+        model.addAttribute("balance", walletService.getBalance(address));
+        return "balance";
     }
 }

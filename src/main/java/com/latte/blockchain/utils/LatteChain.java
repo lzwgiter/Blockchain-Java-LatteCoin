@@ -20,6 +20,11 @@ public class LatteChain {
     private static LatteChain LATTE_COIN = new LatteChain();
 
     /**
+     * latteChain实例是否已经初始化
+     */
+    private boolean isInit = false;
+
+    /**
      * 区块链中的用户信息
      */
     private HashMap<String, Wallet> users = new HashMap<>();

@@ -10,8 +10,9 @@ import java.security.KeyPair;
 import java.util.HashMap;
 
 import lombok.Getter;
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.Setter;
+
+import com.fasterxml.jackson.annotation.JsonIgnore;
 
 /**
  * 钱包类
@@ -53,8 +54,16 @@ public class Wallet {
     @JsonIgnore
     private final Thread workerThread;
 
+    /**
+     * 用户账户金额
+     */
     @Getter
+    @JsonIgnore
     private HashMap<String, Utxo> UTXOs = new HashMap<>();
+
+    @Setter
+    @Getter
+    private float balance;
 
     public Wallet() {
         // 初始化用户的公私钥信息
@@ -65,7 +74,8 @@ public class Wallet {
         publicKeyString = CryptoUtil.getStringFromKey(publicKey);
         String publicKeyString = CryptoUtil.getStringFromKey(publicKey);
 
-            name = publicKeyString.substring(94);
+        name = publicKeyString.substring(94);
+        balance = 0;
         workerThread = new Thread(new MineServiceImpl(), name);
     }
 }

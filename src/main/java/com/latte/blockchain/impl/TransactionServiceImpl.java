@@ -15,11 +15,13 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.lang.reflect.Array;
 import java.security.PrivateKey;
 import java.security.PublicKey;
 import java.util.ArrayList;
 import java.util.HashSet;
 
+import java.util.List;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.ReentrantLock;
 
@@ -63,7 +65,7 @@ public class TransactionServiceImpl implements ITransactionService {
      * @return String 交易信息
      */
     @Override
-    public String createTransaction(String sender, String recipient, float value) {
+    public Transaction createTransaction(String sender, String recipient, float value) {
         // 处理网络原因导致的字符问题
         sender = sender.replace(" ", "+");
         recipient = recipient.replace(" ", "+");
@@ -82,9 +84,9 @@ public class TransactionServiceImpl implements ITransactionService {
             } finally {
                 requestLock.unlock();
             }
-            return JsonUtil.toJson(newTransaction);
+            return newTransaction;
         } else {
-            return "账户[" + sender + "]余额不足或用户不存在，交易失败！";
+            return null;
         }
     }
 
@@ -161,28 +163,43 @@ public class TransactionServiceImpl implements ITransactionService {
      * 获取targetUserName作为接受方的所有交易的交易链
      *
      * @param transactionId 待审计交易id
-     * @return 交易链信息
+     * @return {@link TransactionDigest} 交易链信息
      */
     @Override
-    public String auditTransaction(String transactionId) {
-        StringBuilder sb = new StringBuilder();
-        Transaction transaction = transactionRepo.getTransactionById(transactionId);
-        String data = "Id: " + transaction.getId() + "; " +
-                CryptoUtil.getDecryptedTransaction(transaction.getData(),
-                        latteChain.getUsers().get("admin").getPrivateKey()) + "\n<-";
-        sb.append(data);
+    public ArrayList<TransactionDigest> auditTransaction(String transactionId) {
+        if (!transactionRepo.existsById(transactionId)) {
+            // 不存在该交易
+            return null;
+        } else {
+            ArrayList<TransactionDigest> result = new ArrayList<>();
+            // 追踪交易
+            return traceTransaction(transactionId, result);
+        }
+    }
+
+    /**
+     * 追踪一笔交易信息
+     *
+     * @param id 交易id
+     * @return 交易链信息
+     */
+    private ArrayList<TransactionDigest> traceTransaction(String id, ArrayList<TransactionDigest> results) {
+        Transaction transaction = transactionRepo.getTransactionById(id);
+        TransactionDigest digest = CryptoUtil.getDecryptedTransaction(transaction.getData(),
+                latteChain.getUsers().get("admin").getPrivateKey());
+        results.add(digest);
         // 获取该交易的所有输入的utxo的id
         ArrayList<String> queue = new ArrayList<>(transaction.getInputUtxosId());
-        for (String id : queue) {
-            if (!transactionRepo.existsTransactionByOutputUtxosId(id)) {
+        for (String inputId : queue) {
+            if (!transactionRepo.existsTransactionByOutputUtxosId(inputId)) {
                 // 为挖矿奖励，追踪结束
-                return sb.toString();
+                return results;
             }
             // 获取产生该输入的交易实体
-            Transaction parentTransaction = transactionRepo.getTransactionByOutputUtxosId(id);
-            sb.append(auditTransaction(parentTransaction.getId()));
+            Transaction parentTransaction = transactionRepo.getTransactionByOutputUtxosId(inputId);
+            traceTransaction(parentTransaction.getId(), results);
         }
-        return sb.toString();
+        return results;
     }
 
     @Override
