@@ -81,18 +81,6 @@ public class LatteChainController {
     @PostMapping(path = "/auditTransaction")
     public String audit(@RequestParam(name = "transactionId") String id, Model model) {
         model.addAttribute("traceResult", transactionService.auditTransaction(id));
-        return "audit";
-    }
-
-    /**
-     * 查询指定账户的余额
-     *
-     * @param address 查询对象的账户地址
-     * @return String
-     */
-    @GetMapping(path = "/queryBalance")
-    public String getUserBalance(@RequestParam(name = "address") String address, Model model) {
-        model.addAttribute("balance", walletService.getBalance(address));
-        return "balance";
+        return "auditResult";
     }
 }
