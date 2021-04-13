@@ -48,6 +48,27 @@ public class Wallet {
     private final String publicKeyString;
 
     /**
+     * 管理员群签名打开私钥
+     */
+    @Setter
+    @Getter
+    @JsonIgnore
+    private AdminGroupOpenKey ok;
+
+    /**
+     * 管理员群签名私钥
+     */
+    @Setter
+    @Getter
+    @JsonIgnore
+    private AdminGroupSecretKey ask;
+
+    @Getter
+    @Setter
+    @JsonIgnore
+    private UserGroupSecretKey gsk;
+
+    /**
      * 用户挖矿线程
      */
     @Getter

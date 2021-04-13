@@ -2,14 +2,17 @@ package com.latte.blockchain.impl;
 
 import com.latte.blockchain.repository.UtxoRepo;
 import com.latte.blockchain.entity.*;
+import com.latte.blockchain.service.IGsService;
 import com.latte.blockchain.service.ITransactionService;
 import com.latte.blockchain.service.IWalletService;
 
 import com.latte.blockchain.utils.CryptoUtil;
+import com.latte.blockchain.utils.JsonUtil;
 import com.latte.blockchain.utils.LatteChain;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.nio.charset.StandardCharsets;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -22,8 +25,11 @@ public class WalletServiceImpl implements IWalletService {
 
     private final LatteChain latteChain = LatteChain.getInstance();
 
+//    @Autowired
+//    private ITransactionService transactionService;
+
     @Autowired
-    private ITransactionService transactionService;
+    private IGsService iGsService;
 
     /**
      * UTXO DAO
@@ -107,7 +113,12 @@ public class WalletServiceImpl implements IWalletService {
         // 设置交易数据
         newTransaction.setData(CryptoUtil.getEncryptedTransaction(newTransaction,
                 LatteChain.getInstance().getAdminPublicKey()));
-        transactionService.generateSignature(senderWallet.getPrivateKey(), newTransaction);
+
+        // transactionService.generateSignature(senderWallet.getPrivateKey(), newTransaction);
+
+        // TODO: 对交易进行群签名
+        GroupSignature signature = iGsService.gSign(newTransaction.getData(), senderWallet.getGsk());
+        newTransaction.setSignature(JsonUtil.toJson(signature).getBytes(StandardCharsets.UTF_8));
 
         // 扣除发起者的花费的UTXO(从个人钱包里)
         for (String input : inputs) {

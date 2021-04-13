@@ -52,7 +52,7 @@ public interface ITransactionService {
      * @param privateKey  {@link PrivateKey} 签名私钥
      * @param transaction {@link Transaction} 交易
      */
-    void generateSignature(PrivateKey privateKey, Transaction transaction);
+//    void generateSignature(PrivateKey privateKey, Transaction transaction);
 
     /**
      * 验证交易签名
@@ -60,7 +60,7 @@ public interface ITransactionService {
      * @param transaction {@link Transaction} 交易
      * @return boolean
      */
-    boolean isValidSignature(Transaction transaction);
+//    boolean isValidSignature(Transaction transaction);
 
     /**
      * 计算交易哈希值

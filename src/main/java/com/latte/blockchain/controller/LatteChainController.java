@@ -1,7 +1,9 @@
 package com.latte.blockchain.controller;
 
-import com.latte.blockchain.entity.Transaction;
-import com.latte.blockchain.service.*;
+import com.latte.blockchain.service.IUserService;
+import com.latte.blockchain.service.IChainService;
+import com.latte.blockchain.service.ITransactionService;
+
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
@@ -9,9 +11,6 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.ui.Model;
-
-import java.util.ArrayList;
-
 
 /**
  * @author float311
@@ -22,9 +21,6 @@ public class LatteChainController {
 
     @Autowired
     private IUserService userService;
-
-    @Autowired
-    private IWalletService walletService;
 
     @Autowired
     private IChainService chainService;

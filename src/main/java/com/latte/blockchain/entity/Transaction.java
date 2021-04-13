@@ -87,6 +87,7 @@ public class Transaction {
      * 交易签名信息
      */
     @JsonIgnore
+    @Column(columnDefinition = "mediumBlob")
     private byte[] signature;
 
     /**

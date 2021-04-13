@@ -44,6 +44,11 @@ public class MineServiceImpl implements IMineService {
     private ITransactionService transactionService;
 
     /**
+     * 群签名五福
+     */
+    private IGsService iGsService;
+
+    /**
      * 数据库区块DAO对象
      */
     private BlockRepo blockDao;
@@ -66,12 +71,12 @@ public class MineServiceImpl implements IMineService {
 
     /**
      * 挖矿函数，将构造新的区块并尝试计算其哈希值
-     * TODO: 删去所有使用读写锁操作数据库的行为，改为悲观锁
      */
     @Override
     public void run() {
         transactionService = BeanContext.getApplicationContext().getBean(TransactionServiceImpl.class);
         userService = BeanContext.getApplicationContext().getBean(UserServiceImpl.class);
+        iGsService = BeanContext.getApplicationContext().getBean(IGsServiceImpl.class);
         blockDao = BeanContext.getApplicationContext().getBean(BlockRepo.class);
         transactionDao = BeanContext.getApplicationContext().getBean(TransactionRepo.class);
         transactionPoolDao = BeanContext.getApplicationContext().getBean(TransactionPoolRepo.class);
@@ -135,13 +140,27 @@ public class MineServiceImpl implements IMineService {
             // 已经初始化
             return false;
         }
+
+        // 引入服务类实例
         userService = BeanContext.getApplicationContext().getBean(UserServiceImpl.class);
         transactionService = BeanContext.getApplicationContext().getBean(TransactionServiceImpl.class);
+        iGsService = BeanContext.getApplicationContext().getBean(IGsServiceImpl.class);
         transactionDao = BeanContext.getApplicationContext().getBean(TransactionRepo.class);
         utxoDao = BeanContext.getApplicationContext().getBean(UtxoRepo.class);
 
+        // 初始化群签名服务
+        iGsService.setup();
+
         // 初始化系统预置用户信息
         userService.initUser();
+        Wallet adminAccount = userService.getAllUsersInfo().get("admin");
+        // 初始化管理员信息并生成系统参数
+        iGsService.setAdminKeys(adminAccount);
+        // 将当前环境所有用户都加入到群中
+        for (Wallet newUser : userService.getAllUsersInfo().values()) {
+            iGsService.gEnroll(newUser, adminAccount.getAsk());
+        }
+
         PublicKey coinbasePublicKey = userService.getUserPublicKey("admin");
         // 初始块奖励
         Utxo output = new Utxo(coinbasePublicKey, LatteChainConfEnum.BLOCK_SUBSIDY);

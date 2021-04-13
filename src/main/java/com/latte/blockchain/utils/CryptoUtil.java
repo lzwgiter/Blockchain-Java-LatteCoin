@@ -38,9 +38,9 @@ public class CryptoUtil {
      * @param msg        消息
      * @return byte[] 签名信息
      */
-    public static byte[] applySm2Signature(PrivateKey privateKey, String msg) {
-        return SmUtil.sm2(privateKey, null).sign(msg.getBytes(StandardCharsets.UTF_8));
-    }
+//    public static byte[] applySm2Signature(PrivateKey privateKey, String msg) {
+//        return SmUtil.sm2(privateKey, null).sign(msg.getBytes(StandardCharsets.UTF_8));
+//    }
 
     /**
      * SM2签名验证函数
@@ -50,9 +50,9 @@ public class CryptoUtil {
      * @param signature 签名
      * @return 是否为一个合法的SM2签名信息
      */
-    public static boolean verifySm2Signature(PublicKey publicKey, String msg, byte[] signature) {
-        return SmUtil.sm2(null, publicKey).verify(msg.getBytes(StandardCharsets.UTF_8), signature);
-    }
+//    public static boolean verifySm2Signature(PublicKey publicKey, String msg, byte[] signature) {
+//        return SmUtil.sm2(null, publicKey).verify(msg.getBytes(StandardCharsets.UTF_8), signature);
+//    }
 
     /**
      * SM2加密函数

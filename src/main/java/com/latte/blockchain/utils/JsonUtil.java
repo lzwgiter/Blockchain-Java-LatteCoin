@@ -1,14 +1,17 @@
 package com.latte.blockchain.utils;
 
+import java.io.IOException;
+import java.security.Key;
+
 import com.fasterxml.jackson.core.JsonGenerator;
+import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.JsonSerializer;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializerProvider;
+import com.latte.blockchain.entity.GroupSignature;
 import org.springframework.stereotype.Component;
-
-import java.io.IOException;
-import java.security.Key;
 
 /**
  * json工具类
@@ -25,6 +28,16 @@ public class JsonUtil extends JsonSerializer<Key> {
         } catch (JsonProcessingException e) {
             throw new RuntimeException(e);
         }
+    }
+
+    public static <T> T toBean(String data, Class<T> beanType) {
+        try {
+            ObjectMapper mapper = new ObjectMapper();
+            return mapper.readValue(data, beanType);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return null;
     }
 
     @Override

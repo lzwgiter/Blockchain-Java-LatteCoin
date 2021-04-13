@@ -1,18 +1,21 @@
 package com.latte.blockchain.impl;
 
+import com.latte.blockchain.service.IGsService;
 import com.latte.blockchain.utils.LatteChain;
 import com.latte.blockchain.entity.Wallet;
 import com.latte.blockchain.enums.LatteChainConfEnum;
 import com.latte.blockchain.service.IUserService;
 import com.latte.blockchain.service.IWalletService;
-import com.latte.blockchain.utils.JsonUtil;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Service;
 
 import java.security.PublicKey;
 import java.util.Map;
 
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+
 /**
+ * 用户服务类
+ *
  * @author float311
  * @since 2021/02/03
  */
@@ -26,7 +29,6 @@ public class UserServiceImpl implements IUserService {
 
     /**
      * 初始化区块链系统中预置账户信息
-     *
      */
     @Override
     public void initUser() {

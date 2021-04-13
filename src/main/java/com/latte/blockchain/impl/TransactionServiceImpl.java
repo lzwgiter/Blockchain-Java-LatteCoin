@@ -4,6 +4,7 @@ import com.latte.blockchain.repository.TransactionRepo;
 import com.latte.blockchain.repository.TransactionPoolRepo;
 import com.latte.blockchain.repository.UtxoRepo;
 import com.latte.blockchain.entity.*;
+import com.latte.blockchain.service.IGsService;
 import com.latte.blockchain.service.ITransactionService;
 import com.latte.blockchain.service.IWalletService;
 import com.latte.blockchain.utils.CryptoUtil;
@@ -16,6 +17,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.lang.reflect.Array;
+import java.nio.charset.StandardCharsets;
 import java.security.PrivateKey;
 import java.security.PublicKey;
 import java.util.ArrayList;
@@ -37,6 +39,9 @@ public class TransactionServiceImpl implements ITransactionService {
 
     @Autowired
     private IWalletService walletService;
+
+    @Autowired
+    private IGsService iGsService;
 
     /**
      * 交易DAO对象
@@ -100,10 +105,17 @@ public class TransactionServiceImpl implements ITransactionService {
     public boolean processTransaction(Transaction transaction) {
         // 首先检查一个交易的合法性
         // 验签
-        if (!isValidSignature(transaction)) {
+//        if (!isValidSignature(transaction)) {
+//            log.warn("交易" + transaction.getId() + "签名信息异常！请审计该交易！");
+//            return false;
+//        }
+        String rawData = new String(transaction.getSignature(), StandardCharsets.UTF_8);
+        GroupSignature signature = JsonUtil.toBean(rawData, GroupSignature.class);
+        if (!iGsService.gVerify(signature, transaction.getData())) {
             log.warn("交易" + transaction.getId() + "签名信息异常！请审计该交易！");
             return false;
         }
+
         float inputsValue = getInputsValue(transaction);
         // 计算剩余价值
         if (inputsValue == 0) {
@@ -202,10 +214,10 @@ public class TransactionServiceImpl implements ITransactionService {
         return results;
     }
 
-    @Override
-    public void generateSignature(PrivateKey privateKey, Transaction transaction) {
-        transaction.setSignature(CryptoUtil.applySm2Signature(privateKey, transaction.getData()));
-    }
+//    @Override
+//    public void generateSignature(PrivateKey privateKey, Transaction transaction) {
+//        transaction.setSignature(CryptoUtil.applySm2Signature(privateKey, transaction.getData()));
+//    }
 
     /**
      * 验证交易签名
@@ -213,15 +225,14 @@ public class TransactionServiceImpl implements ITransactionService {
      * @param transaction {@link Transaction} 交易
      * @return 是否为一个合法的签名信息
      */
-    @Override
-    public boolean isValidSignature(Transaction transaction) {
-        Wallet senderWallet = latteChain.getUsers().get(transaction.getSenderString());
-        transaction.setSender(senderWallet.getPublicKey());
-        return CryptoUtil.verifySm2Signature(transaction.getSender(),
-                transaction.getData(),
-                transaction.getSignature());
-    }
-
+//    @Override
+//    public boolean isValidSignature(Transaction transaction) {
+//        Wallet senderWallet = latteChain.getUsers().get(transaction.getSenderString());
+//        transaction.setSender(senderWallet.getPublicKey());
+//        return CryptoUtil.verifySm2Signature(transaction.getSender(),
+//                transaction.getData(),
+//                transaction.getSignature());
+//    }
     @Override
     public String calculateTransactionHash(Transaction transaction) {
         return CryptoUtil.applySm3Hash(transaction.getData());
