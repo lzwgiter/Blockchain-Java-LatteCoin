@@ -4,9 +4,13 @@ import com.latte.blockchain.entity.*;
 import com.latte.blockchain.utils.CryptoUtil;
 import com.latte.blockchain.service.IGsService;
 
+import java.io.ByteArrayOutputStream;
+import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 
+import it.unisa.dia.gas.plaf.jpbc.field.z.ZElement;
+import it.unisa.dia.gas.plaf.jpbc.field.z.ZrElement;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 
@@ -71,7 +75,7 @@ public class IGsServiceImpl implements IGsService {
 
     private boolean isInit = false;
 
-    private final HashMap<Element, String> joinedUserHashMap = new HashMap<>();
+    private final HashMap<String, String> joinedUserHashMap = new HashMap<>();
 
     /**
      * 签名服务初始化
@@ -101,13 +105,11 @@ public class IGsServiceImpl implements IGsService {
      */
     @Override
     public void setAdminKeys(Wallet adminWallet) {
-        Element d = zr.newRandomElement();
-        Element s = zr.newRandomElement();
-        Element u = zr.newRandomElement();
+        // d,s,u <- Zr
+        Element adminD = this.zr.newRandomElement();
+        Element adminS = this.zr.newRandomElement();
+        Element adminU = this.zr.newRandomElement();
 
-        Element adminD = g1.newElementFromBytes(d.toBytes());
-        Element adminS = g1.newElementFromBytes(s.toBytes());
-        Element adminU = g1.newElementFromBytes(u.toBytes());
         adminWallet.setAsk(new AdminGroupSecretKey(adminD, adminS));
         adminWallet.setOk(new AdminGroupOpenKey(adminU));
 
@@ -121,14 +123,14 @@ public class IGsServiceImpl implements IGsService {
      */
     private void generatePublicParameters(Wallet adminWallet) {
         // 获取管理员私有信息
-        Element d = adminWallet.getAsk().getD();
-        Element s = adminWallet.getAsk().getS();
-        Element u = adminWallet.getOk().getU();
+        Element adminD = adminWallet.getAsk().getD();
+        Element adminS = adminWallet.getAsk().getS();
+        Element adminU = adminWallet.getOk().getU();
 
         // 计算生成系统参数
-        Element sysD = d.duplicate().mul(this.p1);
-        Element sysS = s.duplicate().mul(this.p2);
-        Element sysU = u.duplicate().mul(this.p1);
+        Element sysD = this.p1.duplicate().mulZn(adminD);
+        Element sysS = this.p2.duplicate().mulZn(adminS);
+        Element sysU = this.p1.duplicate().mulZn(adminU);
 
         this.gpk = new GroupPublicKey(sysD, sysS, sysU);
     }
@@ -142,62 +144,62 @@ public class IGsServiceImpl implements IGsService {
     @Override
     public void gEnroll(Wallet newUser, AdminGroupSecretKey sk) {
         // 随机选取秘密x
-        Element x = g1.newElementFromBytes(zr.newRandomElement().toBytes());
+        Element x = this.zr.newRandomElement();
 
         // 获取管理员参数
-        Element d = sk.getD();
-        Element s = sk.getS();
+        Element adminD = sk.getD();
+        Element adminS = sk.getS();
 
         // 计算z = (d - x) * (s * x)^-1 * p1
-        Element dSubX = d.duplicate().sub(x);
-        Element invertsMulX = s.duplicate().mul(x).invert();
-        Element z = dSubX.mul(invertsMulX).mul(this.p1);
+        Element dSubX = adminD.duplicate().sub(x);
+        Element invertsMulX = adminS.duplicate().mul(x).invert();
+        Element z = this.p1.duplicate().mulZn(dSubX.mul(invertsMulX));
 
         // 赋予群用户
         newUser.setGsk(new UserGroupSecretKey(x, z));
-        // 添加到群中
-        this.joinedUserHashMap.put(x.mul(z), newUser.getName());
-        log.info("用户" + newUser.getName() + "已加入群！");
+        // 添加到群中，并添加唯一用户表示 x * z
+        Element xMulZ = z.duplicate().mulZn(x);
+        String id = CryptoUtil.applySm3Hash(new String(xMulZ.toBytes()));
+        this.joinedUserHashMap.put(id, newUser.getName());
+        log.info("[Initiation] 用户" + newUser.getName() + "已加入群！");
     }
 
     /**
-     * @param msg      消息
-     * @param gsk      {@link UserGroupSecretKey} 参与签名的用户
+     * 为一个消息进行群签名
+     *
+     * @param msg 消息
+     * @param gsk {@link UserGroupSecretKey} 用户群私钥
      * @return {@link GroupSignature} 签名信息
      */
     @Override
     public GroupSignature gSign(String msg, UserGroupSecretKey gsk) {
         // 随机从整数群中选择一个k
-        Element k = g1.newElementFromBytes(this.zr.newRandomElement().toBytes());
+        Element k = this.zr.newRandomElement();
         Element x = gsk.getX();
         Element z = gsk.getZ();
 
         // 系统参数
-        Element u = this.gpk.getU();
-        Element s = this.gpk.getS();
+        Element sysU = this.gpk.getU();
+        Element sysS = this.gpk.getS();
 
         // 计算C1, C2以及映射
         // c1 = k * p1;
-        Element c1 = k.duplicate().mul(this.p1);
+        Element c1 = this.p1.duplicate().mulZn(k);
 
         // c2 = x * Z + k * U
-        Element xMulZ = x.duplicate().mul(z);
-        Element kMulU = k.duplicate().mul(u);
-        Element c2 = xMulZ.add(kMulU);
+        Element xMulZ = z.duplicate().mulZn(x);
+        Element kMulU = sysU.duplicate().mulZn(k);
+        Element c2 = xMulZ.duplicate().add(kMulU);
 
         // 计算映射: e(U, S)^k
-        Element q = pair.pairing(u, s).powZn(k);
-        Element qG1 = g1.newElementFromBytes(q.toBytes());
-        
+        Element q = pair.pairing(sysU, sysS).powZn(k);
+
         // 计算Hash: c = hash(M, C1, C2, Q)
         String mDigest = CryptoUtil.applySm3Hash(msg);
-        Element m = g1.newElementFromBytes(
-                zr.newElementFromBytes(mDigest.getBytes(StandardCharsets.UTF_8))
-                        .toBytes());
-        Element c = m.duplicate().add(c1).add(c2).add(qG1);
+        Element c = zr.newElementFromBytes(applySecurityHash(q, c1, c2, mDigest));
 
-        // 计算w
-        Element w = k.duplicate().mul(c).add(x);
+        // 计算w = k * c + x
+        Element w = c.duplicate().mul(k).add(x);
 
         return new GroupSignature(c1, c2, c, w);
     }
@@ -209,33 +211,39 @@ public class IGsServiceImpl implements IGsService {
      */
     @Override
     public boolean gVerify(GroupSignature signature, String msg) {
-        // 取出签名信息
+        // 取出并恢复签名信息
         Element c1 = g1.newElementFromBytes(signature.getC1Bytes());
         Element c2 = g1.newElementFromBytes(signature.getC2Bytes());
-        Element w = g1.newElementFromBytes(signature.getWBytes());
-        Element c = g1.newElementFromBytes(signature.getCBytes());
+        Element w = zr.newElementFromBytes(signature.getWBytes());
+        Element c = zr.newElementFromBytes(signature.getCBytes());
+        signature.setC1(c1);
+        signature.setC2(c2);
+        signature.setW(w);
+        signature.setC(c);
 
         // 获取系统公开参数
-        Element d = this.gpk.getD();
-        Element s = this.gpk.getS();
+        Element sysD = this.gpk.getD();
+        Element sysS = this.gpk.getS();
 
-        // 计算各个映射项 Q = (e(c2, s) * e(p1, p2) ^ w) / e(c * c1 + d, p2)
-        Element reflectC2S = this.pair.pairing(c2, s);
-        Element p1MulW = p1.duplicate().mul(w);
-        Element reflectP1P2 = this.pair.pairing(p1MulW, p2);
-        Element cMulC1AddD = c.duplicate().mul(c1).add(d);
+        // 计算各个映射项 Q = (e(c2, S) * e(p1, p2) ^ w) / e(c * c1 + D, p2)
+        Element reflectC2S = this.pair.pairing(c2, sysS);
+        Element reflectP1P2 = this.pair.pairing(p1, p2).powZn(w);
+        Element cMulC1AddD = c1.duplicate().mulZn(c).add(sysD);
         Element denominator = this.pair.pairing(cMulC1AddD, p2);
 
         // 计算Q并计算Hash判断是否有效
         Element calculatedQ = reflectC2S.mul(reflectP1P2).div(denominator);
-        Element calculatedQonG1 = g1.newElementFromBytes(calculatedQ.toBytes());
         String mDigest = CryptoUtil.applySm3Hash(msg);
-        Element m = g1.newElementFromBytes(
-                zr.newElementFromBytes(mDigest.getBytes(StandardCharsets.UTF_8)).toBytes()
-        );
-        Element calculatedHash = m.add(c1).add(c2).add(calculatedQonG1);
+        Element calculatedHash = zr.newElementFromBytes(
+                applySecurityHash(calculatedQ, c1, c2, mDigest));
 
-        return calculatedHash.isEqual(c);
+        if (calculatedHash.isEqual(c)) {
+            log.info("[Processing Transaction] 签名验证成功，交易有效");
+            return true;
+        } else {
+            log.info("[Processing Transaction] 签名验证失败，交易无效！");
+            return false;
+        }
     }
 
     /**
@@ -249,12 +257,43 @@ public class IGsServiceImpl implements IGsService {
         if (gVerify(signature, msg)) {
             Element c1 = signature.getC1();
             Element c2 = signature.getC2();
-            Element uMulC1 = ok.getU().mul(c1);
-            Element id = c2.sub(uMulC1);
-            return this.joinedUserHashMap.get(id);
+            Element uMulC1 = c1.duplicate().mulZn(ok.getU());
+            String id = CryptoUtil.applySm3Hash(
+                    new String(c2.duplicate().sub(uMulC1).toBytes()));
+            if (this.joinedUserHashMap.containsKey(id)) {
+                log.info("[Tracing Transaction] 群签名打开成功！打开人：admin");
+                return this.joinedUserHashMap.get(id);
+            } else {
+                return null;
+            }
+
         } else {
             // 无效签名
             return null;
         }
+    }
+
+    /**
+     * 计算签名中的哈希部分
+     *
+     * @param q  Q
+     * @param c1 C1
+     * @param c2 C2
+     * @param m  message
+     * @return byte[]
+     */
+    private byte[] applySecurityHash(Element q, Element c1, Element c2, String m) {
+        ByteArrayOutputStream bos = new ByteArrayOutputStream();
+        try {
+            bos.write(q.toBytes());
+            bos.write(c1.toBytes());
+            bos.write(c2.toBytes());
+            bos.write(m.getBytes());
+            return bos.toByteArray();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        // error
+        return null;
     }
 }

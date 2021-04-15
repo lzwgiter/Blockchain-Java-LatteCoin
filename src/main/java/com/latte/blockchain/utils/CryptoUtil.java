@@ -3,10 +3,10 @@ package com.latte.blockchain.utils;
 import cn.hutool.crypto.asymmetric.KeyType;
 import com.latte.blockchain.entity.Transaction;
 
+import java.io.ByteArrayOutputStream;
 import java.util.List;
 import java.util.Base64;
 import java.util.ArrayList;
-import java.nio.charset.StandardCharsets;
 import java.security.Key;
 import java.security.PrivateKey;
 import java.security.PublicKey;
@@ -15,7 +15,8 @@ import cn.hutool.crypto.SmUtil;
 import com.latte.blockchain.entity.TransactionDigest;
 
 /**
- * 生成电子签名的工具类
+ * 密码学具类
+ * 提供了SM3哈希算法接口、SM2非对称加密算法接口、密钥与字符串转换函数、区块默克根计算函数
  *
  * @author float
  * @since 2021/1/27
@@ -30,29 +31,6 @@ public class CryptoUtil {
     public static String applySm3Hash(String msg) {
         return SmUtil.sm3(msg);
     }
-
-    /**
-     * SM2签名函数
-     *
-     * @param privateKey 私钥
-     * @param msg        消息
-     * @return byte[] 签名信息
-     */
-//    public static byte[] applySm2Signature(PrivateKey privateKey, String msg) {
-//        return SmUtil.sm2(privateKey, null).sign(msg.getBytes(StandardCharsets.UTF_8));
-//    }
-
-    /**
-     * SM2签名验证函数
-     *
-     * @param publicKey 公钥
-     * @param msg       消息
-     * @param signature 签名
-     * @return 是否为一个合法的SM2签名信息
-     */
-//    public static boolean verifySm2Signature(PublicKey publicKey, String msg, byte[] signature) {
-//        return SmUtil.sm2(null, publicKey).verify(msg.getBytes(StandardCharsets.UTF_8), signature);
-//    }
 
     /**
      * SM2加密函数
@@ -83,11 +61,11 @@ public class CryptoUtil {
      */
     public static String getEncryptedTransaction(Transaction transaction, PublicKey adminPubKey) {
         StringBuilder sb = new StringBuilder();
-        String originData = transaction.getSenderString() + '-' +
-                transaction.getRecipientString() + '-' +
+        String originData = transaction.getRecipientString() + '-' +
                 transaction.getValue() + '-' +
                 transaction.getTimeStamp() + '-';
         sb.append(originData);
+        // 计算并设置交易的ID
         transaction.setId(applySm3Hash(originData));
         sb.append(transaction.getId());
         return applySm2Encrypt(adminPubKey, sb.toString());
@@ -102,7 +80,7 @@ public class CryptoUtil {
     public static TransactionDigest getDecryptedTransaction(String input, PrivateKey adminPriKey) {
         String originData = applySm2Decrypted(adminPriKey, input);
         String[] raw = originData.split("-");
-        return new TransactionDigest(raw[4], raw[0], raw[1], raw[2], raw[3]);
+        return new TransactionDigest(raw[3], raw[0], raw[1], raw[2]);
     }
 
     /**

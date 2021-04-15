@@ -34,21 +34,18 @@ public class Transaction {
      * 发送方的地址
      */
     @Transient
-    @JsonIgnore
     private PublicKey sender;
 
     /**
      * 接受方的地址
      */
     @Transient
-    @JsonIgnore
     private PublicKey recipient;
 
     /**
      * 发起方字符串
      */
     @Getter
-    @JsonAlias({"sender"})
     @Column(name = "sender")
     private String senderString;
 
@@ -56,7 +53,6 @@ public class Transaction {
      * 接受方字符串
      */
     @Getter
-    @JsonAlias({"recipient"})
     @Column(name = "recipient")
     private String recipientString;
 
@@ -84,9 +80,8 @@ public class Transaction {
     private Float value;
 
     /**
-     * 交易签名信息
+     * 交易群签名信息
      */
-    @JsonIgnore
     @Column(columnDefinition = "mediumBlob")
     private byte[] signature;
 
@@ -98,7 +93,6 @@ public class Transaction {
     /**
      * 数据 - 由交易双方、交易金额、时间戳组成
      */
-    @JsonIgnore
     @Column(name = "transaction_data", length = 400)
     private String data;
 

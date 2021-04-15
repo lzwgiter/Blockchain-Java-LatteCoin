@@ -5,6 +5,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import it.unisa.dia.gas.jpbc.Element;
 import lombok.Getter;
+import lombok.Setter;
 
 /**
  * 群签名定义
@@ -17,6 +18,7 @@ public class GroupSignature {
      * C1
      */
     @Getter
+    @Setter
     @JsonIgnore
     private Element c1;
 
@@ -27,6 +29,7 @@ public class GroupSignature {
      * C2
      */
     @Getter
+    @Setter
     @JsonIgnore
     private Element c2;
 
@@ -37,6 +40,7 @@ public class GroupSignature {
      * c - 哈希值
      */
     @Getter
+    @Setter
     @JsonIgnore
     private Element c;
 
@@ -48,6 +52,7 @@ public class GroupSignature {
      * w
      */
     @Getter
+    @Setter
     @JsonIgnore
     private Element w;
 
@@ -55,7 +60,7 @@ public class GroupSignature {
     @JsonProperty(value = "wbytes")
     private byte[] wBytes;
 
-    public GroupSignature(){}
+    public GroupSignature() {}
 
     public GroupSignature(Element c1, Element c2, Element c, Element w) {
         this.c1 = c1;

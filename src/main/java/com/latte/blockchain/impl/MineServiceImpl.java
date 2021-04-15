@@ -34,6 +34,7 @@ public class MineServiceImpl implements IMineService {
     private final LatteChain latteChain = LatteChain.getInstance();
 
     /**
+     *
      * 用户服务
      */
     private IUserService userService;
@@ -202,10 +203,10 @@ public class MineServiceImpl implements IMineService {
             blockToAdd.setId(0);
             // 添加到数据库中
             blockDao.save(blockToAdd);
-            log.info("创世块已创建！LatteChain实例初始化成功");
+            log.info("[Initiation] 创世块已创建！LatteChain实例初始化成功");
         } else {
             blockDao.save(blockToAdd);
-            log.info(Thread.currentThread().getName() + " Mined ☺ : " + blockToAdd.getHash());
+            log.info("[Issued Block] " + Thread.currentThread().getName() + " Mined ☺ : " + blockToAdd.getHash());
             // 奖励矿工
             rewardMiner(blockToAdd.getMsg(), blockToAdd);
         }

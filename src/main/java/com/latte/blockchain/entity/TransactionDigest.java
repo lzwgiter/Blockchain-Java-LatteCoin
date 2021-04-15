@@ -39,14 +39,12 @@ public class TransactionDigest {
      * 储存一个交易的摘要信息
      *
      * @param transactionId    交易ID
-     * @param senderAddress    交易发起方地址
      * @param recipientAddress 交易接受方地址
      * @param value            交易金额
      */
-    public TransactionDigest(String transactionId, String senderAddress, String recipientAddress,
+    public TransactionDigest(String transactionId, String recipientAddress,
                              String value, String timeStamp) {
         this.transactionId = transactionId;
-        this.senderAddress = senderAddress;
         this.recipientAddress = recipientAddress;
         this.value = value;
         this.timeStamp = timeStamp;

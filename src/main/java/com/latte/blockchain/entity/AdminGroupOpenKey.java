@@ -14,7 +14,7 @@ public class AdminGroupOpenKey {
      * u
      */
     @Getter
-    private Element u;
+    private final Element u;
 
     public AdminGroupOpenKey(Element u) {
         this.u = u;

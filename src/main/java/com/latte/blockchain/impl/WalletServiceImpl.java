@@ -3,7 +3,6 @@ package com.latte.blockchain.impl;
 import com.latte.blockchain.repository.UtxoRepo;
 import com.latte.blockchain.entity.*;
 import com.latte.blockchain.service.IGsService;
-import com.latte.blockchain.service.ITransactionService;
 import com.latte.blockchain.service.IWalletService;
 
 import com.latte.blockchain.utils.CryptoUtil;
@@ -24,9 +23,6 @@ import java.util.Set;
 public class WalletServiceImpl implements IWalletService {
 
     private final LatteChain latteChain = LatteChain.getInstance();
-
-//    @Autowired
-//    private ITransactionService transactionService;
 
     @Autowired
     private IGsService iGsService;
@@ -110,13 +106,12 @@ public class WalletServiceImpl implements IWalletService {
                 recipientWallet.getPublicKey(), value, inputs);
         newTransaction.setSenderString(sender);
         newTransaction.setRecipientString(recipient);
-        // 设置交易数据
+
+        // 设置交易数据，使用管理员公钥进行加密来提供溯源交易接受方的能力
         newTransaction.setData(CryptoUtil.getEncryptedTransaction(newTransaction,
                 LatteChain.getInstance().getAdminPublicKey()));
 
-        // transactionService.generateSignature(senderWallet.getPrivateKey(), newTransaction);
-
-        // TODO: 对交易进行群签名
+        // 对交易进行群签名
         GroupSignature signature = iGsService.gSign(newTransaction.getData(), senderWallet.getGsk());
         newTransaction.setSignature(JsonUtil.toJson(signature).getBytes(StandardCharsets.UTF_8));
 
