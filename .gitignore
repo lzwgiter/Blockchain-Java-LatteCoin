@@ -1,5 +1,6 @@
 # IDEA Project files
 .idea/
+*.iml
 
 # Build and Release Folders
 target/

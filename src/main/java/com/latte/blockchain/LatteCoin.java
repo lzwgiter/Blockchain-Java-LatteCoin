@@ -9,8 +9,8 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
  * @since 2021/01/31
  */
 @SpringBootApplication
-public class LatteCoinDemo {
+public class LatteCoin {
     public static void main(String[] args) {
-        SpringApplication.run(LatteCoinDemo.class, args);
+        SpringApplication.run(LatteCoin.class, args);
     }
 }

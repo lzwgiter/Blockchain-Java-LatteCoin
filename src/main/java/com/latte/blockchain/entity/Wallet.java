@@ -1,7 +1,7 @@
 package com.latte.blockchain.entity;
 
 import cn.hutool.crypto.SecureUtil;
-import com.latte.blockchain.impl.MineServiceImpl;
+import com.latte.blockchain.service.impl.MineServiceImpl;
 import com.latte.blockchain.utils.CryptoUtil;
 
 import java.security.PublicKey;
