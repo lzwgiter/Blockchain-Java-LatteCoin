@@ -1,0 +1,18 @@
+server:
+  port: 9999
+# 数据库配置
+spring:
+  datasource:
+    username: chain_admin
+    url: jdbc:mysql://localhost:3306/lattechain?serverTimezone=UTC&useSSL=false
+    driver-class-name: com.mysql.cj.jdbc.Driver
+  jpa:
+    show-sql: false
+    database-platform: org.hibernate.dialect.MySQL5InnoDBDialect
+    hibernate:
+      ddl-auto: update
+  thymeleaf:
+    encoding: UTF-8
+  web:
+    resources:
+      static-locations: classpath:/templates/, classpath:/static/

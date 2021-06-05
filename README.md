@@ -1,0 +1,2 @@
+# LatteCoin
+ LatteCoin是一个使用Java开发的、基于SpringBoot框架的、基于国密算法与群签名的可溯源区块链模拟系统
