@@ -19,12 +19,21 @@ import org.springframework.ui.Model;
 @Controller
 public class LatteChainController {
 
+    /**
+     * 用户服务
+     */
     @Autowired
     private IUserService userService;
 
+    /**
+     * 链服务
+     */
     @Autowired
     private IChainService chainService;
 
+    /**
+     * 交易服务
+     */
     @Autowired
     private ITransactionService transactionService;
 

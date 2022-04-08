@@ -1,9 +1,9 @@
 package com.latte.blockchain.utils;
 
 import cn.hutool.crypto.asymmetric.KeyType;
+import cn.hutool.crypto.digest.DigestUtil;
 import com.latte.blockchain.entity.Transaction;
 
-import java.io.ByteArrayOutputStream;
 import java.util.List;
 import java.util.Base64;
 import java.util.ArrayList;
@@ -22,6 +22,16 @@ import com.latte.blockchain.entity.TransactionDigest;
  * @since 2021/1/27
  */
 public class CryptoUtil {
+    /**
+     * SHA256哈希函数
+     *
+     * @param msg 待哈西消息
+     * @return String 哈希值
+     */
+    public static String applySha256Hash(String msg) {
+        return DigestUtil.sha256Hex(msg);
+    }
+
     /**
      * Sm3哈希函数
      *

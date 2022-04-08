@@ -47,22 +47,6 @@ public interface ITransactionService {
     float getInputsValue(Transaction transaction);
 
     /**
-     * 为一个交易生成签名
-     *
-     * @param privateKey  {@link PrivateKey} 签名私钥
-     * @param transaction {@link Transaction} 交易
-     */
-//    void generateSignature(PrivateKey privateKey, Transaction transaction);
-
-    /**
-     * 验证交易签名
-     *
-     * @param transaction {@link Transaction} 交易
-     * @return boolean
-     */
-//    boolean isValidSignature(Transaction transaction);
-
-    /**
      * 计算交易哈希值
      *
      * @param transaction {@link Transaction} 交易

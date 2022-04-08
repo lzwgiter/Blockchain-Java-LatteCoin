@@ -89,7 +89,6 @@ public class Wallet {
     public Wallet() {
         // 初始化用户的公私钥信息
         KeyPair keyPair = SecureUtil.generateKeyPair("SM2");
-
         privateKey = keyPair.getPrivate();
         publicKey = keyPair.getPublic();
         publicKeyString = CryptoUtil.getStringFromKey(publicKey);
