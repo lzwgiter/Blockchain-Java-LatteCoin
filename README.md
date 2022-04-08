@@ -14,14 +14,17 @@ LatteCoin是一个使用Java开发的、基于SpringBoot框架的、基于国密
 
 说明
 ===
-该系统的群签名方案来自论文Simple-Yet-Efficient Construction and Revocation of Group Signatures 出处：Ho, Tzu-Hsin, Yen, et al. Simple-Yet-Efficient Construction and Revocation of Group Signatures.[J]. International Journal of Foundations of Computer Science, 2015.
+该系统的群签名方案来自论文Simple-Yet-Efficient Construction and Revocation of Group Signatures 出处：Ho, Tzu-Hsin, Yen, et al.
+Simple-Yet-Efficient Construction and Revocation of Group Signatures.[J]. International Journal of Foundations of
+Computer Science, 2015.
 
-系统中群签名算法的实现使用了JPBC库：JPBC
+系统中群签名算法的实现使用了JPBC库：[JPBC](http://gas.dia.unisa.it/projects/jpbc/index.html#.YLtWSL7itEZ)
 
 需要下载jar包到本地，然后在命令行中输入：
 ```
 mvn install:install-file -Dfile=[下载的jpbc-pbc-2.0.0.jar的路径]
 mvn install:install-file -Dfile=[下载的jpbc-api-2.0.0.jar的路径]
+
 mvn install:install-file -Dfile=[下载的jpbc-plaf-2.0.0.jar的路径]
 
 ```
