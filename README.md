@@ -3,7 +3,7 @@
 # LatteCoin
 LatteCoin是一个使用Java开发的、基于SpringBoot框架的、基于国密算法与群签名的可溯源区块链模拟系统，该系统为授权链类型。 LatteCoin为你提供了区块链的仿真环境，你可以用这个项目去测试自己密码学方案的可行性与效率。
 
-本项目基于Spring Boot(2.4.2) 开发，并使用thymeleaf进行了web前端的展示，便于操作，后端数据库采用JPA方式进行操作，并使用了多线程来进行挖矿模拟操作。
+本项目基于Spring Boot(2.4.2) 开发，并使用thymeleaf进行了web前端的展示，便于操作。后端数据库采用Spring JPA方式进行操作，并使用了多线程来进行挖矿模拟操作。
 
 # 特性
 本项目特别使用了群签名算法来进行平衡用户的匿名性以及可溯源性
@@ -17,11 +17,22 @@ Computer Science, 2015.
 
 系统中群签名算法的实现使用了JPBC库：[JPBC](http://gas.dia.unisa.it/projects/jpbc/index.html#.YLtWSL7itEZ)
 
-需要下载jar包到本地，然后在命令行中输入：
+需要下载jpbc到本地，解压后，在目录下打开命令行，然后在命令行中输入：
+```cmd
+mvn clean package install
 ```
-mvn install:install-file -Dfile=jars\jpbc-api-2.0.0.jar -DgroupId=it.unisa.dia.gas -DartifactId=jpbc-api -Dpackaging=jar -Dversion=2.0.0
-mvn install:install-file -Dfile=jars\jpbc-plaf-2.0.0.jar -DgroupId=it.unisa.dia.gas -DartifactId=jpbc-plaf -Dpackaging=jar -Dversion=2.0.0
-mvn install:install-file -Dfile=jars\jpbc-pbc-2.0.0.jar -DgroupId=it.unisa.dia.gas -DartifactId=jpbc-pbc -Dpackaging=jar -Dversion=2.0.0
+
+如果有报错，如jdk版本、编码问题，请修改和添加如下内容到jpbc根目录的pom.xml中：
+```xml
+<!-- 任意处添加 -->
+<properties>
+    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+</properties>
+```
+```xml
+<!-- 修改下面的内容为1.8 -->
+<source>1.5</source>
+<target>1.5</target>
 ```
 
 # 用法
@@ -39,6 +50,8 @@ jar包运行方法：
 ![整体架构](https://i.imgtg.com/2023/03/14/flZPj.png)
 
 ![发起交易](https://i.imgtg.com/2023/03/14/flKFx.png)
+
+![交易溯源](https://i.imgtg.com/2023/03/20/9iPWl.png)
 
 # 感谢
 感谢去年在华为西研所实习时，前辈们对我耐心的悉心指导，使他们让我具备了开发这个项目的能力；感谢实验室师兄将我带进了区块链大门，毕业设计期间也对我进行了非常详细的指导。
