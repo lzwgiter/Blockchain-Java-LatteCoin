@@ -5,7 +5,7 @@ import com.latte.blockchain.utils.CryptoUtil;
 
 import lombok.Data;
 
-import javax.persistence.*;
+import jakarta.persistence.*;
 import java.security.PublicKey;
 
 /**

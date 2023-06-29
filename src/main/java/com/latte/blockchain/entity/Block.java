@@ -3,7 +3,7 @@ package com.latte.blockchain.entity;
 import com.latte.blockchain.enums.LatteChainConfEnum;
 import lombok.Data;
 
-import javax.persistence.*;
+import jakarta.persistence.*;
 import java.util.ArrayList;
 import java.util.List;
 

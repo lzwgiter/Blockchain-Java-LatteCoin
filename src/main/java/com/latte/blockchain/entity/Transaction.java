@@ -1,16 +1,13 @@
 package com.latte.blockchain.entity;
 
-import com.fasterxml.jackson.annotation.JsonAlias;
-
 import java.security.PublicKey;
 import java.util.HashSet;
 import java.util.Set;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.Data;
 import lombok.Getter;
 
-import javax.persistence.*;
+import jakarta.persistence.*;
 
 /**
  * 交易类
